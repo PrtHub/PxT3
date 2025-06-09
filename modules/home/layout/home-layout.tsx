@@ -19,7 +19,7 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
               borderTopLeftRadius: "var(--chat-radius)",
             }}
           >
-            <main className="relative w-full h-full mx-auto flex-grow overflow-y-auto">
+            <main className="relative w-full mx-auto flex-grow overflow-y-auto">
               {children}
             </main>
             <div className="w-full max-w-2xl mx-auto sticky bottom-0">

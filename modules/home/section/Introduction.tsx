@@ -26,13 +26,13 @@ const Introduction = () => {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full max-w-2xl m-auto px-4 py-12">
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-2xl m-auto py-12">
       <div className="text-center space-y-6 w-full">
-        <h1 className="text-4xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-white">
           How can I help you today?
         </h1>
-        <p className="text-white/70 text-lg max-w-2xl mx-auto">
-          I'm PxT3, your AI assistant. I can help with coding, writing, learning, and more.
+        <p className="text-white/70 text-sm max-w-2xl mx-auto">
+          I&apos;m PxT3, your AI assistant. I can help with coding, writing, learning, and more.
           Ask me anything or try one of these examples:
         </p>
 
@@ -40,7 +40,7 @@ const Introduction = () => {
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              className="group p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors duration-200 text-left"
+              className="group p-4 bg-transparent rounded-lg border border-white/10 hover:bg-white/10 transition-colors duration-200 text-left"
             >
               <div className="flex items-center space-x-3">
                 {/* <div className="p-1.5 rounded-md bg-white/5">
