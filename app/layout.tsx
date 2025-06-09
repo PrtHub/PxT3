@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Silkscreen, Space_Grotesk, Sora } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
+import { HydrationCleanup } from "@/lib/hydration-cleanup";
 
 const silkscreen = Silkscreen({
   variable: "--font-silkscreen",
@@ -48,8 +50,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${spaceGrotesk.variable} ${silkscreen.variable} ${sora.variable} antialiased dark`}
+        suppressHydrationWarning
       >
-        {children}
+        <SessionProvider>
+          <HydrationCleanup />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
