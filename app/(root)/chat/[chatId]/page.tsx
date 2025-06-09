@@ -1,21 +1,19 @@
-import React from 'react'
+import React from "react";
 
-const Chat = () => {
-  return (
-    <div className='max-w-2xl mx-auto'>
-      <div className='p-4 min-h-full'> 
-        <div className="h-[1200px] text-white"> 
-          Chat messages will appear here...
-          <br />
-          <br />... (Scroll down to see more) ...
-          <br />
-          <br />... (More placeholder content) ...
-          <br />
-          <br />End of placeholder content.
-        </div>
-      </div>
-    </div>
-  )
+interface Props {
+  params: Promise<{ chatId: string }>;
 }
 
-export default Chat
+const Chat = async ({ params }: Props) => {
+  const { chatId } = await params;
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="p-4 min-h-full">
+        <div className="h-[1200px] text-white">{chatId}</div>
+      </div>
+    </div>
+  );
+};
+
+export default Chat;

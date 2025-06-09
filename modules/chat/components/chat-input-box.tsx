@@ -16,8 +16,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 const ChatInputBox = () => {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState("Gemini 2.5 Flash");
 
@@ -27,6 +29,7 @@ const ChatInputBox = () => {
     if (message.trim()) {
       console.log("Sending message:", message);
       setMessage("");
+      router.push(`/chat/${message.slice(0, 20)}`);
     }
   };
 
@@ -44,7 +47,7 @@ const ChatInputBox = () => {
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyUp={handleKeyPress}
             placeholder="Type your message here..."
             className="bg-transparent border-none text-gray-300 placeholder-gray-500 text-base p-0 h-auto min-h-[60px] resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
             style={{ fontSize: "16px" }}

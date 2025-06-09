@@ -4,8 +4,25 @@ import {
   text,
   primaryKey,
   integer,
+  boolean,
+  jsonb,
+  pgEnum,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "@auth/core/adapters";
+import { relations } from "drizzle-orm";
+
+export const messageRoleEnum = pgEnum("message_role", [
+  "user",
+  "assistant",
+  "system",
+  "tool",
+]);
+export const attachmentStatusEnum = pgEnum("attachment_status", [
+  "pending",
+  "completed",
+  "failed",
+]);
 
 export const users = pgTable("user", {
   id: text("id").notNull().primaryKey(),
@@ -18,15 +35,23 @@ export const users = pgTable("user", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const usersRelations = relations(users, ({ many }) => ({
+  accounts: many(accounts),
+  sessions: many(sessions),
+  chats: many(chats),
+  attachments: many(attachments),
+  userApiKeys: many(userApiKeys),
+}));
+
 export const accounts = pgTable(
   "account",
   {
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").$type<AdapterAccount["type"]>().notNull(), // Will be 'oauth' for Google
-    provider: text("provider").notNull(), // Will be 'google'
-    providerAccountId: text("providerAccountId").notNull(), // The user's unique ID from Google
+    type: text("type").$type<AdapterAccount["type"]>().notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
     refresh_token: text("refresh_token"),
     access_token: text("access_token"),
     expires_at: integer("expires_at"),
@@ -43,6 +68,13 @@ export const accounts = pgTable(
   ]
 );
 
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
 export const sessions = pgTable("session", {
   sessionToken: text("sessionToken").notNull().primaryKey(),
   userId: text("userId")
@@ -50,3 +82,129 @@ export const sessions = pgTable("session", {
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const chats = pgTable("chats", {
+  id: text("id").primaryKey().notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("New Chat"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+
+  shareId: text("share_id").unique().notNull(),
+  isPublic: boolean("is_public").default(false).notNull(),
+
+  metadata: jsonb("metadata").$type<{ model: string; provider: string }>(),
+});
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  user: one(users, {
+    fields: [chats.userId],
+    references: [users.id],
+  }),
+  messages: many(messages),
+}));
+
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey().notNull(),
+  chatId: text("chatId")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+
+  parentId: text("parent_id"),
+
+  role: messageRoleEnum("role").notNull().default("user"),
+  content: text("content").notNull(),
+
+  toolCalls: jsonb("tool_calls"),
+  toolCallId: text("tool_call_id"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+
+  metadata: jsonb("metadata"),
+});
+
+export const messagesRelations = relations(messages, ({ one, many }) => ({
+  chat: one(chats, {
+    fields: [messages.chatId],
+    references: [chats.id],
+  }),
+  attachments: many(attachments),
+  parent: one(messages, {
+    fields: [messages.parentId],
+    references: [messages.id],
+    relationName: "message_branches",
+  }),
+  children: many(messages, {
+    relationName: "message_branches",
+  }),
+}));
+
+export const attachments = pgTable("attachments", {
+  id: text("id").primaryKey().notNull(),
+  messageId: text("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  storageKey: text("storage_key").notNull(),
+  url: text("url").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type"),
+  size: integer("size"),
+  status: attachmentStatusEnum("status").default("pending").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  message: one(messages, {
+    fields: [attachments.messageId],
+    references: [messages.id],
+  }),
+  user: one(users, {
+    fields: [attachments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userApiKeys = pgTable(
+  "user_api_keys",
+  {
+    id: text("id").notNull().primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    provider: text("provider").notNull(),
+    encryptedKey: text("encrypted_key").notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_api_keys_user_id_provider").on(
+      table.userId,
+      table.provider
+    ),
+  ]
+);
+
+export const userApiKeysRelations = relations(userApiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [userApiKeys.userId],
+    references: [users.id],
+  }),
+}));
