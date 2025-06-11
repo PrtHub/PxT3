@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 const SidebarFooterSection = () => {
-
   const { user, isLoading, isAuthenticated } = useUser();
 
   if (isLoading) {
@@ -26,10 +26,13 @@ const SidebarFooterSection = () => {
 
   if (!isAuthenticated) {
     return (
-      <Link href="/auth">
+      <Link href="/auth" className="w-full">
         <Button
           variant="ghost"
-          className="w-full h-10 justify-start gap-2 cursor-pointer hover:bg-gradient-to-br hover:from-zinc-800 hover:to-zinc-900 "
+          className={cn(
+            "w-full h-10 justify-start gap-2 cursor-pointer",
+            "hover:bg-gradient-to-br hover:from-zinc-800 hover:to-zinc-900"
+          )}
         >
           <LogIn className="h-4 w-4" />
           <span className="">Login</span>

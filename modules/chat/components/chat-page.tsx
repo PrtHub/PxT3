@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import ChatView from "./chat-view";
 import ChatInputBox from "./chat-input-box";
+import { trpc } from "@/trpc/client";
 
 interface ChatPageProps {
   chatId: string;
@@ -18,6 +19,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingResponse, setStreamingResponse] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const utils = trpc.useUtils();
 
   const fetchMessages = async (chatId: string) => {
     const res = await fetch(`/api/chat/messages?chatId=${chatId}`);
@@ -40,6 +43,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   useEffect(() => {
     setCurrentChatId(initialChatId);
     fetchMessages(initialChatId);
+    utils.chat.getChatsForUser.invalidate();
   }, [initialChatId]);
 
   const handleSendMessage = async (userMessage: string, model: string) => {
@@ -73,6 +77,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
           setStreamingResponse("");
           setLoading(false);
           fetchMessages(currentChatId);
+          utils.chat.getChatsForUser.invalidate();
           return;
         }
         buffer += decoder.decode(value, { stream: true });
@@ -94,6 +99,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               assistantContent += event.data.content || "";
               setStreamingResponse(assistantContent);
             } else if (event.event === "end") {
+              utils.chat.getChatsForUser.invalidate();
             }
           } catch (err) {
             console.error("Failed to parse stream event:", eventString, err);
@@ -114,7 +120,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="relative min-h-screen">
         <ChatView
-          chatId={currentChatId}
+          // chatId={currentChatId}
           messages={messages}
           streamingResponse={streamingResponse}
           loading={loading}

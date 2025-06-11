@@ -1,38 +1,59 @@
-import React from 'react'
+"use client";
+
+import React, { useEffect, useRef } from 'react';
+import { ChatMessage, ChatMessageLoading } from './chat-message';
 
 interface Message {
-  role: string;
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-interface Props {
-  chatId: string;
+interface ChatViewProps {
   messages: Message[];
   streamingResponse: string;
   loading: boolean;
 }
 
-const ChatView = ({chatId, messages, streamingResponse, loading }: Props) => {
+const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  console.log(streamingResponse)
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingResponse]);
 
   return (
-    <div className="w-full h-[calc(100vh-10px)] flex flex-col">
-      <div className="p-4 border-b h-14">chat-view {chatId}</div>
-      <div className="flex-1 w-full overflow-y-auto pb-60">
-        <div className="max-w-3xl mx-auto">
-          {messages.map((message, index) => (
-            <div key={index} className={`p-4 ${message.role === 'user' ? 'text-rose-500' : 'text-emerald-500'}`}>
-              {message.content}
-            </div>
-          ))}
-          <div className='flex flex-col gap-4'>
-            {loading && <div className='text-emerald-500'>{streamingResponse}</div>}
-          </div>
+    <div className="flex flex-col h-[calc(100vh-10px)] w-full">
+      <div className="pt-8"/>
+      <div className="flex-1 overflow-y-auto pb-60">
+        <div className="max-w-3xl mx-auto w-full">
+          {messages.length === 0 && !loading ? (
+           <ChatMessageLoading />
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <ChatMessage
+                  key={index}
+                  role={message.role}
+                  content={message.content}
+                />
+              ))}
+              {loading && (
+                <>
+                  <ChatMessage
+                    role="assistant"
+                    content={streamingResponse}
+                    isStreaming={true}
+                  />
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+              {!loading && <div ref={messagesEndRef} />}
+            </>
+          )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ChatView
+export default ChatView;
