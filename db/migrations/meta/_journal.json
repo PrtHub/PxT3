@@ -15,6 +15,20 @@
       "when": 1749460915468,
       "tag": "0001_rainy_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749564262507,
+      "tag": "0002_thankful_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1749564428263,
+      "tag": "0003_ambitious_boom_boom",
+      "breakpoints": true
     }
   ]
 }

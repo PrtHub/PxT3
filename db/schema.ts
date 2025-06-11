@@ -5,7 +5,6 @@ import {
   primaryKey,
   integer,
   boolean,
-  jsonb,
   pgEnum,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -101,8 +100,6 @@ export const chats = pgTable("chats", {
 
   shareId: text("share_id").unique().notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
-
-  metadata: jsonb("metadata").$type<{ model: string; provider: string }>(),
 });
 
 export const chatsRelations = relations(chats, ({ one, many }) => ({
@@ -122,15 +119,11 @@ export const messages = pgTable("messages", {
   parentId: text("parent_id"),
 
   role: messageRoleEnum("role").notNull().default("user"),
+  contentType: text("content_type").notNull(),
   content: text("content").notNull(),
-
-  toolCalls: jsonb("tool_calls"),
-  toolCallId: text("tool_call_id"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-
-  metadata: jsonb("metadata"),
 });
 
 export const messagesRelations = relations(messages, ({ one, many }) => ({

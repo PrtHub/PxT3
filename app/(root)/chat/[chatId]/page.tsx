@@ -1,4 +1,6 @@
-import React from "react";
+import ChatPage from "@/modules/chat/components/chat-page";
+import { HydrateClient } from "@/trpc/server";
+// import { trpc } from "@/trpc/server";
 
 interface Props {
   params: Promise<{ chatId: string }>;
@@ -7,12 +9,14 @@ interface Props {
 const Chat = async ({ params }: Props) => {
   const { chatId } = await params;
 
+  // void trpc.chat.getMessagesInChat.prefetch({ chatId });
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="p-4 min-h-full">
-        <div className="h-[1200px] text-white">{chatId}</div>
+    <HydrateClient>
+      <div className="w-full min-h-screen">
+        <ChatPage chatId={chatId} />
       </div>
-    </div>
+    </HydrateClient>
   );
 };
 
