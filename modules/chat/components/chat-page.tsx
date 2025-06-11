@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import ChatView from "./chat-view";
 import ChatInputBox from "./chat-input-box";
 
@@ -13,25 +13,39 @@ interface Message {
   content: string;
 }
 
-const DEFAULT_MODEL = "deepseek/deepseek-chat-v3-0324:free";
-
 const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const [currentChatId, setCurrentChatId] = useState(initialChatId);
-  const [messagesFetched, setMessagesFetched] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingResponse, setStreamingResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const autoTriggeredRef = useRef(false);
 
-  const handleSendMessage = async (userMessage: string, model: string, { optimistic = true } = {}) => {
-    setLoading(true);
-
-    if (optimistic) {
-      setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+  const fetchMessages = async (chatId: string) => {
+    const res = await fetch(`/api/chat/messages?chatId=${chatId}`);
+    const data = await res.json();
+    if (Array.isArray(data.messages)) {
+      setMessages(
+        data.messages.map((msg: any) => ({
+          role: msg.role,
+          content:
+            Array.isArray(msg.content) && msg.content[0]?.text
+              ? msg.content[0].text
+              : typeof msg.content === "string"
+              ? msg.content
+              : JSON.stringify(msg.content),
+        }))
+      );
     }
+  };
 
+  useEffect(() => {
+    setCurrentChatId(initialChatId);
+    fetchMessages(initialChatId);
+  }, [initialChatId]);
+
+  const handleSendMessage = async (userMessage: string, model: string) => {
+    setLoading(true);
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     const controller = new AbortController();
-
     try {
       const res = await fetch("/api/chat/send", {
         method: "POST",
@@ -43,42 +57,37 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
       });
-
       if (!res.ok || !res.body) {
         const errorText = await res.text();
-        throw new Error(`Network response was not ok: ${res.status} ${errorText}`);
+        throw new Error(
+          `Network response was not ok: ${res.status} ${errorText}`
+        );
       }
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let assistantContent = "";
-
       const processStream = async () => {
         const { value, done } = await reader.read();
         if (done) {
-          if (assistantContent) {
-            setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-          }
           setStreamingResponse("");
           setLoading(false);
+          fetchMessages(currentChatId);
           return;
         }
-
         buffer += decoder.decode(value, { stream: true });
         let eventEndIndex;
-        
         while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
-          const eventString = buffer.slice(0, eventEndIndex).replace(/^data: /, "");
+          const eventString = buffer
+            .slice(0, eventEndIndex)
+            .replace(/^data: /, "");
           buffer = buffer.slice(eventEndIndex + 2);
-
           try {
             const event = JSON.parse(eventString);
-            
             if (event.event === "chatCreated") {
               const newChatId = event.data.chatId;
               if (!currentChatId) {
-                window.history.pushState(null, '', `/chat/${newChatId}`);
+                window.history.pushState(null, "", `/chat/${newChatId}`);
                 setCurrentChatId(newChatId);
               }
             } else if (event.event === "chunk") {
@@ -92,73 +101,27 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         }
         await processStream();
       };
-      
       await processStream();
-
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
+      if (err instanceof Error && err.name !== "AbortError") {
         console.error("Fetch error:", err);
-        if (optimistic) setMessages(messages);
       }
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    setCurrentChatId(initialChatId);
-    setMessages([]);
-  }, [initialChatId]);
-
-  useEffect(() => {
-    if (!currentChatId) return;
-    fetch(`/api/chat/messages?chatId=${currentChatId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data.messages)) {
-          setMessages(
-            data.messages.map((msg: any) => ({
-              role: msg.role,
-              content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-            }))
-          );
-          setMessagesFetched(true);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to fetch messages:', err);
-        setMessagesFetched(true);
-      });
-  }, [currentChatId]);
-
-  useEffect(() => {
-    if (
-      messagesFetched &&
-      messages.length === 1 &&
-      messages[0].role === "user" &&
-      !loading &&
-      !autoTriggeredRef.current
-    ) {
-      autoTriggeredRef.current = true;
-      handleSendMessage(messages[0].content, DEFAULT_MODEL, { optimistic: false });
-    }
-    if (
-      messages.length !== 1 ||
-      messages[0].role !== "user"
-    ) {
-      autoTriggeredRef.current = false;
-    }
-  }, [messages, loading, messagesFetched]);
-
   return (
-    <div className="relative min-h-screen">
-      <ChatView
-        chatId={currentChatId}
-        messages={messages}
-        streamingResponse={streamingResponse}
-        loading={loading}
-      />
-      <ChatInputBox onSend={handleSendMessage} loading={loading} />
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <div className="relative min-h-screen">
+        <ChatView
+          chatId={currentChatId}
+          messages={messages}
+          streamingResponse={streamingResponse}
+          loading={loading}
+        />
+        <ChatInputBox onSend={handleSendMessage} loading={loading} />
+      </div>
+    </Suspense>
   );
 };
 

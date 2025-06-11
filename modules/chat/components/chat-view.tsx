@@ -20,7 +20,7 @@ const ChatView = ({chatId, messages, streamingResponse, loading }: Props) => {
     <div className="w-full h-[calc(100vh-10px)] flex flex-col">
       <div className="p-4 border-b h-14">chat-view {chatId}</div>
       <div className="flex-1 w-full overflow-y-auto pb-60">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           {messages.map((message, index) => (
             <div key={index} className={`p-4 ${message.role === 'user' ? 'text-rose-500' : 'text-emerald-500'}`}>
               {message.content}

@@ -522,7 +522,7 @@ function SidebarMenuButton({
       className={cn(
         sidebarMenuButtonVariants({ variant, size }), 
         // Add opacity transition
-        "transition-opacity duration-300 ease-in-out",
+        "transition-opacity ease-in-out",
         className
       )}
       {...props}

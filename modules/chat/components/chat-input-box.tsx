@@ -41,7 +41,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, loading }) => {
   };
 
   return (
-    <div className="absolute bottom-3 left-0 right-0 max-w-4xl mx-auto flex items-center justify-center h-28">
+    <div className="absolute bottom-3 left-0 right-0 max-w-3xl mx-auto flex items-center justify-center h-28">
       <section className="w-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-t-md p-4">
         <div className="mb-4">
           <Input

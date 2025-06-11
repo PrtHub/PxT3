@@ -160,17 +160,59 @@ export async function POST(req: NextRequest) {
 
         console.log(`[API] Calling OpenRouter with model: ${input.model}...`);
 
+        // If this is a new chat, immediately generate the assistant response
+        if (isNewChat) {
+          // Call OpenRouter and stream the response as usual
+          const openrouterResponse = await openrouter.chat.completions.create({
+            model: input.model,
+            messages: formattedMessagesForLlm,
+            stream: true,
+          });
+
+          let chunkCount = 0;
+          for await (const chunk of openrouterResponse) {
+            chunkCount++;
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              aiResponseContent += content;
+              enqueue({ event: 'chunk', data: { content } });
+            }
+          }
+
+          if (chunkCount === 0 || !aiResponseContent) {
+            throw new Error("No content received from AI model despite a successful stream.");
+          }
+
+          await db.insert(messages).values({
+            id: aiMessageId,
+            chatId: currentChatId,
+            role: "assistant",
+            contentType: "text",
+            content: aiResponseContent,
+            parentId: userMessageId,
+          });
+
+          const finalTitle = aiResponseContent.substring(0, 50) || "New Chat";
+          await db
+            .update(chats)
+            .set({ title: finalTitle })
+            .where(eq(chats.id, currentChatId));
+
+          enqueue({ event: 'end', data: { userMessageId, aiMessageId } });
+          controller.close();
+          return;
+        }
+
+        // For existing chats, stream as before
         const openrouterResponse = await openrouter.chat.completions.create({
           model: input.model,
           messages: formattedMessagesForLlm,
           stream: true,
         });
 
-        console.log("[API] Connection to OpenRouter established, starting stream...");
-
         let chunkCount = 0;
         for await (const chunk of openrouterResponse) {
-            chunkCount++;
+          chunkCount++;
           const content = chunk.choices[0]?.delta?.content || "";
           if (content) {
             aiResponseContent += content;
@@ -178,15 +220,10 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        console.log(`[API] Stream from OpenRouter finished. Received ${chunkCount} chunks.`);
         if (chunkCount === 0 || !aiResponseContent) {
           throw new Error("No content received from AI model despite a successful stream.");
         }
 
-        if (!aiResponseContent) {
-          throw new Error("No content received from the AI model.");
-        }
-        
         await db.insert(messages).values({
           id: aiMessageId,
           chatId: currentChatId,
@@ -196,17 +233,6 @@ export async function POST(req: NextRequest) {
           parentId: userMessageId,
         });
 
-        console.log(`[API] Saved full AI response to DB.`);
-
-        if (isNewChat) {
-          const finalTitle = aiResponseContent.substring(0, 50) || "New Chat";
-          await db
-            .update(chats)
-            .set({ title: finalTitle })
-            .where(eq(chats.id, currentChatId));
-        }
-        
-        console.log("[API] Stream finished successfully. Closing controller.");
         enqueue({ event: 'end', data: { userMessageId, aiMessageId } });
         controller.close();
       },

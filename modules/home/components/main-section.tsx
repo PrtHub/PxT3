@@ -1,17 +1,13 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import Link from "next/link";
+import ChatHistory from "@/modules/chat/components/chat-history";
 
 const MainSection = () => {
   return (
@@ -65,27 +61,7 @@ const MainSection = () => {
           />
         </div>
       </div>
-      <SidebarGroup className="px-4 py-2">
-        <SidebarGroupContent>
-          <div className="mb-4">
-            <p className="text-xs text-button/80 font-semibold mb-2 group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out">
-              Today
-            </p>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="w-full h-10 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-md text-sm group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:p-0">
-                  <Link
-                    href={`/chat/wlenknwe`}
-                    className="group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out font-medium text-white cursor-pointer whitespace-nowrap"
-                  >
-                    AI explanation
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <ChatHistory />
     </>
   );
 };
