@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { chats, messages } from "@/db/schema";
-import { openrouter } from "@/lib/open-router";
+import { getOpenRouterClient } from "@/lib/open-router";
 import { auth } from "@/auth"; 
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,15 +33,15 @@ const messageContentInputSchema = z.union([
 ]);
 
 const sendMessageInputSchema = z.object({
-  chatId: z.string().optional(),
-  content: messageContentInputSchema,
-  model: z.string().default("google/gemini-2.0-flash-exp:free"),
+  chatId: z.string(),
+  content: messageContentInputSchema.optional(),
+  model: z.string(),
+  apiKey: z.string().optional().nullable(),
   parentMessageId: z.string().optional().nullable(),
 });
 
-
 export async function POST(req: NextRequest) {
-    console.log("\n--- [API /api/chat/send] Received new request ---");
+  console.log("\n--- [API /api/chat/send] Received new request ---");
   const session = await auth();
   if (!session?.user?.id) {
     return new NextResponse("Unauthorized: You must be logged in to send a message.", { status: 401 });
@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
     const input = sendMessageInputSchema.parse(body);
     console.log(`[API] Parsed input for chatId: ${input.chatId || 'new chat'}`);
 
+    console.log(`[API] Input: ${JSON.stringify(input)}`);
+
+    const openrouter = getOpenRouterClient(input.apiKey);
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -60,63 +64,40 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         };
         
-        let currentChatId = input.chatId;
-        let isNewChat = false;
+        const currentChatId = input.chatId;
 
-        console.log(`[API] Using chatId: ${currentChatId}`);
+        const [existingChat] = await db
+          .select({ userId: chats.userId })
+          .from(chats)
+          .where(eq(chats.id, currentChatId))
+          .limit(1);
 
-        if (!currentChatId) {
-          isNewChat = true;
-          const initialTitle =
-            typeof input.content === "string"
-              ? input.content.substring(0, 50)
-              : input.content.find((part) => part.type === "text")?.text?.substring(0, 50) || "New Chat";
-          
-          const [newChat] = await db
-            .insert(chats)
-            .values({
-              id: crypto.randomUUID(),
-              userId,
-              title: initialTitle,
-              shareId: crypto.randomUUID(),
-            })
-            .returning({ id: chats.id });
-
-          if (!newChat?.id) {
-            throw new Error("Failed to create a new chat.");
-          }
-          currentChatId = newChat.id;
-          enqueue({ event: 'chatCreated', data: { chatId: currentChatId } });
-        } else {
-          const [existingChat] = await db
-            .select({ userId: chats.userId })
-            .from(chats)
-            .where(eq(chats.id, currentChatId))
-            .limit(1);
-
-          if (!existingChat) {
-            throw new Error("Chat not found.");
-          }
-          if (existingChat.userId !== userId) {
-            throw new Error("You are not authorized to access this chat.");
-          }
+        if (!existingChat) {
+          throw new Error("Chat not found.");
+        }
+        if (existingChat.userId !== userId) {
+          throw new Error("You are not authorized to access this chat.");
         }
         
-        const userMessageContentType = typeof input.content === "string" ? "text" : "parts";
-        const userMessageContentForDb =
-          typeof input.content === "string"
-            ? input.content
-            : JSON.stringify(input.content);
+        let userMessageId: string | null = null;
+        if (input.content) {
+          const userMessageContentType = typeof input.content === "string" ? "text" : "parts";
+          const userMessageContentForDb =
+            typeof input.content === "string"
+              ? input.content
+              : JSON.stringify(input.content);
 
-        const userMessageId = crypto.randomUUID();
-        await db.insert(messages).values({
-          id: userMessageId,
-          chatId: currentChatId,
-          role: "user",
-          contentType: userMessageContentType,
-          content: userMessageContentForDb,
-          parentId: input.parentMessageId,
-        });
+          userMessageId = crypto.randomUUID();
+          await db.insert(messages).values({
+            id: userMessageId,
+            chatId: currentChatId,
+            role: "user",
+            contentType: userMessageContentType,
+            content: userMessageContentForDb,
+            parentId: input.parentMessageId,
+          });
+          enqueue({ event: 'userMessageCreated', data: { userMessageId: userMessageId } });
+        }
 
         const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
         let currentMessageIdForHistory = input.parentMessageId;
@@ -146,64 +127,29 @@ export async function POST(req: NextRequest) {
           currentMessageIdForHistory = messageNode.parentId;
         }
 
-        const userMessageForLlm = {
-          role: "user" as const,
-          content: (userMessageContentType === "text" 
-            ? userMessageContentForDb 
-            : JSON.parse(userMessageContentForDb)
-          ) as string | OpenAI.Chat.Completions.ChatCompletionContentPart[]
-        };
-        formattedMessagesForLlm.push(userMessageForLlm);
+        if (input.content) {
+          const userMessageContentType = typeof input.content === "string" ? "text" : "parts";
+          const userMessageContentForDb =
+            typeof input.content === "string"
+              ? input.content
+              : JSON.stringify(input.content);
+
+          const userMessageForLlm = {
+            role: "user" as const,
+            content: (userMessageContentType === "text" 
+              ? userMessageContentForDb 
+              : JSON.parse(userMessageContentForDb)
+            ) as string | OpenAI.Chat.Completions.ChatCompletionContentPart[]
+          };
+          formattedMessagesForLlm.push(userMessageForLlm);
+        }
 
         let aiResponseContent = "";
         const aiMessageId = crypto.randomUUID();
 
         console.log(`[API] Calling OpenRouter with model: ${input.model}...`);
+        console.log(`[API] Using API key: ${input.apiKey}`);
 
-        // If this is a new chat, immediately generate the assistant response
-        if (isNewChat) {
-          // Call OpenRouter and stream the response as usual
-          const openrouterResponse = await openrouter.chat.completions.create({
-            model: input.model,
-            messages: formattedMessagesForLlm,
-            stream: true,
-          });
-
-          let chunkCount = 0;
-          for await (const chunk of openrouterResponse) {
-            chunkCount++;
-            const content = chunk.choices[0]?.delta?.content || "";
-            if (content) {
-              aiResponseContent += content;
-              enqueue({ event: 'chunk', data: { content } });
-            }
-          }
-
-          if (chunkCount === 0 || !aiResponseContent) {
-            throw new Error("No content received from AI model despite a successful stream.");
-          }
-
-          await db.insert(messages).values({
-            id: aiMessageId,
-            chatId: currentChatId,
-            role: "assistant",
-            contentType: "text",
-            content: aiResponseContent,
-            parentId: userMessageId,
-          });
-
-          const finalTitle = aiResponseContent.substring(0, 50) || "New Chat";
-          await db
-            .update(chats)
-            .set({ title: finalTitle })
-            .where(eq(chats.id, currentChatId));
-
-          enqueue({ event: 'end', data: { userMessageId, aiMessageId } });
-          controller.close();
-          return;
-        }
-
-        // For existing chats, stream as before
         const openrouterResponse = await openrouter.chat.completions.create({
           model: input.model,
           messages: formattedMessagesForLlm,
@@ -224,16 +170,18 @@ export async function POST(req: NextRequest) {
           throw new Error("No content received from AI model despite a successful stream.");
         }
 
+        const parentIdForAssistant = userMessageId || input.parentMessageId;
+
         await db.insert(messages).values({
           id: aiMessageId,
           chatId: currentChatId,
           role: "assistant",
           contentType: "text",
           content: aiResponseContent,
-          parentId: userMessageId,
+          parentId: parentIdForAssistant,
         });
 
-        enqueue({ event: 'end', data: { userMessageId, aiMessageId } });
+        enqueue({ event: 'end', data: { userMessageId: userMessageId, aiMessageId: aiMessageId } });
         controller.close();
       },
       cancel() {

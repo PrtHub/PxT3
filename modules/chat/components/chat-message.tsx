@@ -90,7 +90,7 @@ export function ChatMessage({
     <div
       className={cn(
         "group w-fit",
-        isUser && "bg-gradient-to-br px-4 pt-4 from-zinc-800 to-zinc-900 rounded-md mt-10 mb-8"
+        isUser && "ml-auto px-4 pt-5 border border-button/20 bg-button/15 rounded-md mt-20 mb-16"
       )}
     >
       <div className="flex gap-4 m-auto max-w-3xl">
@@ -197,7 +197,7 @@ export function ChatMessage({
               {content}
             </ReactMarkdown>
             {isStreaming && (
-              <span className="inline-block w-2 h-4 bg-emerald-400 animate-pulse ml-1" />
+              <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
             )}
           </div>
         </div>

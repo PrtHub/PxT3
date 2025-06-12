@@ -3,30 +3,29 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-import { Globe, Paperclip, ArrowUp } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Globe, Paperclip, ArrowUp, Loader2, StopCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSettingsStore } from "../store/settings-store";
+import { ModelSelector } from "@/components/model-selector";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string) => void;
+  onStop?: () => void;
   loading?: boolean;
 }
 
-const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, loading }) => {
+const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, onStop, loading }) => {
   const [message, setMessage] = useState("");
-  const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat-v3-0324:free");
-
-  const models = ["Gemini 2.5 Flash", "GPT-4", "Claude 3.5", "Llama 2"];
+  const {
+    selectedModel,
+    setSelectedModel,
+    setOpenRouterApiKey,
+    openRouterApiKey,
+  } = useSettingsStore();
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -56,30 +55,13 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, loading }) => {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="text-gray-300 hover:text-white hover:bg-gray-700 p-2 h-auto font-medium text-sm cursor-pointer"
-                  disabled={loading}
-                >
-                  {selectedModel}
-                  <ChevronDown className=" h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700">
-                {models.map((model) => (
-                  <DropdownMenuItem
-                    key={model}
-                    onClick={() => setSelectedModel(model)}
-                    className="text-gray-200 hover:text-white text-sm hover:bg-gray-700 cursor-pointer"
-                  >
-                    {model}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelSelect={setSelectedModel}
+              onApiKeyChange={setOpenRouterApiKey}
+              currentApiKey={openRouterApiKey}
+            />
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -112,21 +94,41 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, loading }) => {
             </Tooltip>
           </div>
 
-          <Button
-            onClick={() => {
-              if (message.trim() && !loading) {
-                if (onSend) {
-                  onSend(message, selectedModel);
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                if (message.trim() && !loading) {
+                  if (onSend) {
+                    onSend(message, selectedModel);
+                  }
+                  setMessage("");
                 }
-                setMessage("");
-              }
-            }}
-            disabled={!message.trim() || loading}
-            size="icon"
-            className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
-          >
-            <ArrowUp className="size-4" />
-          </Button>
+              }}
+              disabled={!message.trim() || loading}
+              size="icon"
+              className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin text-black" />
+              ) : (
+                <ArrowUp className="size-4" />
+              )}
+            </Button>
+            {loading && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-md cursor-pointer"
+                onClick={() => {
+                  if (onStop) {
+                    onStop();
+                  }
+                }}
+              >
+                <StopCircle className="size-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </section>
     </div>
