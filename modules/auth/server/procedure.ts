@@ -1,11 +1,12 @@
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { createTRPCRouter } from "@/trpc/init";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { protectedProcedure } from "@/trpc/init";
 
 export const AuthRouter = createTRPCRouter({
-  getOne: baseProcedure.query(async ({ ctx }) => {
+  getOne: protectedProcedure.query(async ({ ctx }) => {
     const { userId } = ctx;
 
     if (!userId) {

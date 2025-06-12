@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { chats, messages } from "@/db/schema";
 import { openrouter } from "@/lib/open-router";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq } from "drizzle-orm";
 import OpenAI from "openai";
@@ -53,7 +53,9 @@ export const ChatRouter = createTRPCRouter({
       const initialTitle =
         typeof input.content === "string"
           ? input.content.substring(0, 50)
-          : input.content.find((part) => part.type === "text")?.text?.substring(0, 50) || "New Chat";
+          : input.content
+              .find((part) => part.type === "text")
+              ?.text?.substring(0, 50) || "New Chat";
 
       let isNewChat = false;
       if (!currentChatId) {
@@ -98,7 +100,8 @@ export const ChatRouter = createTRPCRouter({
         }
       }
 
-      const userMessageContentType = typeof input.content === "string" ? "text" : "parts";
+      const userMessageContentType =
+        typeof input.content === "string" ? "text" : "parts";
       const userMessageContentForDb =
         typeof input.content === "string"
           ? input.content
@@ -124,7 +127,8 @@ export const ChatRouter = createTRPCRouter({
         });
       }
 
-      const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+      const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+        [];
       let currentMessageIdForHistory = input.parentMessageId;
 
       while (currentMessageIdForHistory) {
@@ -151,22 +155,22 @@ export const ChatRouter = createTRPCRouter({
             messageNode.contentType === "parts"
               ? JSON.parse(messageNode.content)
               : messageNode.content,
-        })
+        });
 
         currentMessageIdForHistory = messageNode.parentId;
       }
-      
+
       const userMessageForLlm = {
-          role: "user" as const,
-          content: (
-            userMessageContentType === "text"
-              ? userMessageContentForDb
-              : JSON.parse(userMessageContentForDb)
-          ) as string | OpenAI.Chat.Completions.ChatCompletionContentPart[]
+        role: "user" as const,
+        content: (userMessageContentType === "text"
+          ? userMessageContentForDb
+          : JSON.parse(userMessageContentForDb)) as
+          | string
+          | OpenAI.Chat.Completions.ChatCompletionContentPart[],
       };
 
       formattedMessagesForLlm.push(userMessageForLlm);
-      
+
       let aiResponseContent = "";
 
       try {
@@ -223,29 +227,28 @@ export const ChatRouter = createTRPCRouter({
       };
     }),
 
-    getChatsForUser: protectedProcedure
-    .query(async ({ ctx }) => {
-      const { userId } = ctx;
+  getChatsForUser: protectedProcedure.query(async ({ ctx }) => {
+    const { userId } = ctx;
 
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
+    if (!userId) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
 
-      const userChats = await db
-        .select({
-          id: chats.id,
-          title: chats.title,
-          createdAt: chats.createdAt,
-          updatedAt: chats.updatedAt,
-        })
-        .from(chats)
-        .where(eq(chats.userId, userId))
-        .orderBy(desc(chats.updatedAt));
+    const userChats = await db
+      .select({
+        id: chats.id,
+        title: chats.title,
+        createdAt: chats.createdAt,
+        updatedAt: chats.updatedAt,
+      })
+      .from(chats)
+      .where(eq(chats.userId, userId))
+      .orderBy(desc(chats.updatedAt));
 
-      return userChats;
-    }),
+    return userChats;
+  }),
 
-    getMessagesInChat: protectedProcedure
+  getMessagesInChat: protectedProcedure
     .input(
       z.object({
         chatId: z.string(),
@@ -292,14 +295,18 @@ export const ChatRouter = createTRPCRouter({
         .orderBy(asc(messages.createdAt));
 
       const formattedMessages = chatMessages.map((message) => {
-        let parsedContent: { type: string }[] | OpenAI.Chat.Completions.ChatCompletionContentPart[];
+        let parsedContent:
+          | { type: string }[]
+          | OpenAI.Chat.Completions.ChatCompletionContentPart[];
         if (message.contentType === "text") {
           parsedContent = [{ type: "text", text: message.content }];
         } else {
           try {
             parsedContent = JSON.parse(message.content);
           } catch {
-            parsedContent = [{ type: "text", text: "[Error displaying content]" }];
+            parsedContent = [
+              { type: "text", text: "[Error displaying content]" },
+            ];
           }
         }
 
@@ -314,4 +321,113 @@ export const ChatRouter = createTRPCRouter({
 
       return formattedMessages;
     }),
+
+  getOneChat: protectedProcedure
+    .input(z.object({ chatId: z.string() }))
+    .query(async ({ input }) => {
+      const { chatId } = input;
+
+      const [existingChat] = await db
+        .select()
+        .from(chats)
+        .where(eq(chats.id, chatId))
+        .limit(1);
+
+      if (!existingChat) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Chat not found.",
+        });
+      }
+
+      return {
+        title: existingChat.title,
+        userId: existingChat.userId,
+      };
+    }),
+
+  shareChat: protectedProcedure
+    .input(
+      z.object({
+        chatId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { chatId } = input;
+
+      const [existingChat] = await db
+        .select({
+          id: chats.id,
+          userId: chats.userId,
+          shareId: chats.shareId,
+        })
+        .from(chats)
+        .where(eq(chats.id, chatId))
+        .limit(1);
+
+      if (!existingChat) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Chat not found.",
+        });
+      }
+
+      if (existingChat.userId !== userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "You are not authorized to share this chat.",
+        });
+      }
+
+      await db
+        .update(chats)
+        .set({ isPublic: true })
+        .where(eq(chats.id, chatId));
+
+      return {
+        url: `${
+          process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        }/share/${existingChat.shareId}`,
+      };
+    }),
+    editChatTitle: protectedProcedure
+      .input(
+        z.object({
+          chatId: z.string(),
+          title: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { userId } = ctx;
+        const { chatId, title } = input;
+
+        const [existingChat] = await db
+          .select({
+            id: chats.id,
+            userId: chats.userId,
+          })
+          .from(chats)
+          .where(eq(chats.id, chatId))
+          .limit(1);
+
+        if (!existingChat) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Chat not found.",
+          });
+        }
+
+        if (existingChat.userId !== userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "You are not authorized to edit this chat.",
+          });
+        }
+
+        await db
+          .update(chats)
+          .set({ title })
+          .where(eq(chats.id, chatId));
+      }),
 });

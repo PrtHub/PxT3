@@ -23,7 +23,6 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-10px)] w-full">
-      <div className="pt-8"/>
       <div className="flex-1 overflow-y-auto pb-60">
         <div className="max-w-3xl mx-auto w-full">
           {messages.length === 0 && !loading ? (

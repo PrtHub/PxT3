@@ -3,7 +3,6 @@
 import React, {
   useState,
   useEffect,
-  Suspense,
   useRef,
   useCallback,
 } from "react";
@@ -12,6 +11,7 @@ import ChatInputBox from "./chat-input-box";
 import { useSettingsStore } from "../store/settings-store";
 import { useInitialMessageStore } from "../store/initial-message-store";
 import { trpc } from "@/trpc/client";
+import ChatHeader from "./chat-header";
 
 interface ChatPageProps {
   chatId: string;
@@ -67,25 +67,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       if (currentPartialResponse.trim()) {
         setMessages((prevMessages) => [...prevMessages, { role: "assistant", content: currentPartialResponse }]);
       }
-
-      if (currentPartialResponse.trim()) {
-        try {
-          await fetch("/api/chat/save-partial-message", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chatId: initialChatId,
-              content: currentPartialResponse,
-              parentId: latestUserMessageIdRef.current,
-            }),
-          });
-        } catch (dbError) {
-          console.error("Failed to save partial message to DB:", dbError);
-        }
-      }
-      console.log("[ChatPage] Streaming stopped by user, partial response saved.");
     }
-  }, [loading, setMessages, setStreamingResponse, setLoading, initialChatId, latestUserMessageIdRef]);
+  }, [loading, setMessages, setStreamingResponse, setLoading]);
 
   const handleSendMessage = useCallback(async (userMessage: string, model: string) => {
     setLoading(true);
@@ -205,8 +188,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   ]);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
       <div className="relative min-h-screen">
+        <ChatHeader chatId={initialChatId} />
         <ChatView
           messages={messages}
           streamingResponse={streamingResponse}
@@ -214,7 +197,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         />
         <ChatInputBox onSend={handleSendMessage} onStop={handleStop} loading={loading} />
       </div>
-    </Suspense>
   );
 };
 
