@@ -1,33 +1,27 @@
+import { OpenRouterModel } from "@/lib/api";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface Model {
-  id: string;
-  name: string;
-  description: string;
-  context_length: number;
-  pricing: {
-    prompt: string;
-    completion: string;
-  };
-}
-
 interface SettingsState {
   openRouterApiKey: string | null;
+  geminiApiKey: string | null;
   selectedModel: string;
-  availableModels: Model[];
+  availableModels: OpenRouterModel[];
   setOpenRouterApiKey: (key: string | null) => void;
+  setGeminiApiKey: (key: string | null) => void;
   setSelectedModel: (model: string) => void;
-  setAvailableModels: (models: Model[]) => void;
+  setAvailableModels: (models: OpenRouterModel[]) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       openRouterApiKey: null,
+      geminiApiKey: null,
       selectedModel: "deepseek/deepseek-chat-v3-0324:free",
       availableModels: [],
       setOpenRouterApiKey: (key) => set({ openRouterApiKey: key }),
+      setGeminiApiKey: (key) => set({ geminiApiKey: key }),
       setSelectedModel: (model) => set({ selectedModel: model }),
       setAvailableModels: (models) => set({ availableModels: models }),
     }),
@@ -35,6 +29,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: "chat-settings",
       partialize: (state) => ({
         openRouterApiKey: state.openRouterApiKey,
+        geminiApiKey: state.geminiApiKey,
         selectedModel: state.selectedModel,
       }),
     }

@@ -254,3 +254,36 @@ export const freeModels = {
     }
   ]
 }
+
+export const imageModels = {
+  "data": [
+    {
+      "id": "gemini-2.0-flash-preview-image-generation",
+      "name": "Gemini Image Generation",
+      "created": 1741818122,
+      "description": "Google's Gemini 2.0 Flash Preview Image Generation model",
+      "architecture": {
+        "input_modalities": ["text"],
+        "output_modalities": ["image"],
+        "tokenizer": "Gemini"
+      },
+      "top_provider": {
+        "is_moderated": true
+      },
+      "pricing": {
+        "prompt": "0.0000007",
+        "completion": "0.0000007",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "context_length": 128000,
+      "hugging_face_id": "gemini-2.0-flash-preview-image-generation",
+      "per_request_limits": {},
+      "supported_parameters": ["temperature", "max_tokens", "top_p"]
+    }
+  ]
+}

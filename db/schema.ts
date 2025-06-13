@@ -144,12 +144,12 @@ export const messagesRelations = relations(messages, ({ one, many }) => ({
 
 export const attachments = pgTable("attachments", {
   id: text("id").primaryKey().notNull(),
-  messageId: text("message_id")
-    .notNull()
-    .references(() => messages.id, { onDelete: "cascade" }),
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  messageId: text("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
 
   storageKey: text("storage_key").notNull(),
   url: text("url").notNull(),

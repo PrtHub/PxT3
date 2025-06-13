@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/trpc/client";
 import { toast } from "sonner";
-import TitleModal from "@/components/title-modal";
 import { useUser } from "@/hooks/use-user";
+import DialogModal from "@/components/dialog-modal";
 
 interface ChatHeaderProps {
   chatId: string;
@@ -112,11 +112,12 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
         </div>
       </div>
 
-    <TitleModal
-      isEditing={isEditing}
-      setIsEditing={setIsEditing}
-      newTitle={newTitle}
-      setNewTitle={setNewTitle}
+    <DialogModal
+      title="Edit Chat Title"
+      isSaving={isEditing}
+      setIsSaving={setIsEditing}
+      newValue={newTitle}
+      setNewValue={setNewTitle}
       handleSave={handleSave}
       disabled={editChatTitle.isPending}  
     />

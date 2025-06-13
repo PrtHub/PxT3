@@ -10,9 +10,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSettingsStore } from "../store/settings-store";
-import { ModelSelector } from "@/components/model-selector";
+import { ModelSelector } from "@/components/model-selector/model-selector";
 import { WebSearchToggle } from "@/components/web-search-toggle";
-import { freeModels } from "@/constants/models";
+import { cn } from "@/lib/utils";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string) => void;
@@ -37,6 +37,9 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     setSelectedModel,
     setOpenRouterApiKey,
     openRouterApiKey,
+    availableModels,
+    setGeminiApiKey,
+    geminiApiKey,
   } = useSettingsStore();
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -50,6 +53,18 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       }
     }
   };
+
+  const hasImageInput = availableModels?.some(
+    (m) =>
+      m.id === selectedModel &&
+      m.architecture?.input_modalities?.includes("image")
+  );
+
+  const hasFileInput = availableModels?.some(
+    (m) =>
+      m.id === selectedModel &&
+      m.architecture?.input_modalities?.includes("file")
+  );
 
   return (
     <div className="absolute bottom-3 left-0 right-0 max-w-3xl mx-auto flex items-center justify-center h-28">
@@ -72,6 +87,8 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               onModelSelect={setSelectedModel}
               onApiKeyChange={setOpenRouterApiKey}
               currentApiKey={openRouterApiKey}
+              geminiApiKey={geminiApiKey}
+              onGeminiApiKeyChange={setGeminiApiKey}
             />
 
             <WebSearchToggle
@@ -79,21 +96,32 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               onToggle={(enabled) =>
                 webSearchConfig.onConfigChange?.({ enabled })
               }
-              hasWebSearch={freeModels.data?.some(m => m.id === selectedModel && m.supported_parameters?.includes('tools')) ?? false}
+              hasWebSearch={
+                availableModels?.some(
+                  (m) =>
+                    m.id === selectedModel &&
+                    m.supported_parameters?.includes("tools")
+                ) ?? false
+              }
             />
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
-                  className="text-gray-300 bg-transparent hover:text-white hover:bg-gray-500/20 border border-zinc-700 h-7 p-1.5 cursor-pointer"
-                  disabled={loading}
+                  className={cn("text-gray-300 bg-transparent hover:text-white hover:bg-gray-500/20 border border-zinc-700 h-7 p-1.5 cursor-pointer disabled:cursor-not-allowed", !hasImageInput && "opacity-50 cursor-not-allowed")}
+                  // disabled={!hasImageInput || !hasFileInput}
                 >
                   <Paperclip className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top">
-                <p>Attach files</p>
+                {hasImageInput ? (
+                  <p>Attach image</p>
+                ) : hasFileInput ? (
+                  <p>Attach file</p>
+                ) : (
+                  <p>File upload is not supported</p>
+                )}
               </TooltipContent>
             </Tooltip>
           </div>

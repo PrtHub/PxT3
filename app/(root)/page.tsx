@@ -5,11 +5,17 @@ import Introduction from '@/modules/home/section/Introduction';
 import ChatInputBox from '@/modules/chat/components/chat-input-box';
 import { useRouter } from 'next/navigation';
 import { useInitialMessageStore } from '@/modules/chat/store/initial-message-store';
+import { useSettingsStore } from '@/modules/chat/store/settings-store';
 
 const Homepage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
+
+  const {geminiApiKey, selectedModel} = useSettingsStore()
+
+  console.log("geminiApiKey", geminiApiKey)
+  console.log("selectedModel", selectedModel)
 
   const handleSendMessage = async (userMessage: string) => {
     setLoading(true);
