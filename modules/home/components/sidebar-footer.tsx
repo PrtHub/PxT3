@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
+import { useState } from "react";
 import { User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -11,6 +13,15 @@ import { cn } from "@/lib/utils";
 
 const SidebarFooterSection = () => {
   const { user, isLoading, isAuthenticated } = useUser();
+  const [imageError, setImageError] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (user?.image) {
+      setImageSrc(user.image);
+      setImageError(false);
+    }
+  }, [user?.image]);
 
   if (isLoading) {
     return (
@@ -41,16 +52,32 @@ const SidebarFooterSection = () => {
     );
   }
 
+  const handleImageError = () => {
+    setImageError(true);
+    setImageSrc(undefined);
+  };
+
   return (
     <div className="flex items-center gap-3">
       <Avatar className="h-8 w-8 group-data-[collapsible=icon]:opacity-0 transition-opacity duration-500 ease-in-out">
-        <AvatarImage
-          src={user?.image ?? ""}
-          alt={user?.name || "User"}
-        />
-        <AvatarFallback>
-          <User className="h-4 w-4" />
-        </AvatarFallback>
+        {imageSrc && !imageError ? (
+          <div className="relative h-full w-full">
+            <Image
+              src={imageSrc}
+              alt={user?.name || "User"}
+              fill
+              className="object-cover"
+              onError={handleImageError}
+              unoptimized={imageSrc.includes('googleusercontent.com')}
+              referrerPolicy="no-referrer"
+              priority
+            />
+          </div>
+        ) : (
+          <AvatarFallback className="bg-zinc-800">
+            <User className="h-4 w-4 text-zinc-400" />
+          </AvatarFallback>
+        )}
       </Avatar>
       <div className="group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hidden transition-opacity duration-500 ease-in-out">
         <p className="text-sm font-medium whitespace-nowrap">
