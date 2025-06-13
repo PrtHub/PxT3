@@ -22,9 +22,9 @@ const ChatHistory = () => {
       <SidebarGroup className="flex flex-col h-full px-4 py-2">
         <Skeleton className="h-4 w-24 mb-2" />
         <SidebarGroupContent className="flex-1 overflow-y-auto">
-          <div className="space-y-2 pr-2">
+          <div className="space-y-3 pr-2">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full rounded-md" />
+              <Skeleton key={i} className="h-8 w-full rounded-md" />
             ))}
           </div>
         </SidebarGroupContent>

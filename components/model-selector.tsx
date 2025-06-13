@@ -6,7 +6,16 @@ import {
   Sparkles,
   Zap,
   AlertCircle,
+  Eye,
+  Globe,
+  Brain,
+  Image as ImageIcon,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,6 +48,77 @@ const getModelIcon = (modelId: string) => {
   return <Key className="h-4 w-4 text-gray-400" />;
 };
 
+const ModelCapabilities = ({ model }: { model: OpenRouterModel }) => {
+  const hasWebSearch = model.supported_parameters?.some((p: string) => 
+    typeof p === 'string' && p.toLowerCase().includes('tools')
+  );
+  
+  const isReasoningModel = model.name.toLowerCase().includes('reasoning') || 
+    (model.description?.toLowerCase().includes('reasoning') ?? false);
+    
+  const canGenerateImages = model.architecture?.output_modalities?.some((m: string) => 
+    m.toLowerCase().includes('image')
+  );
+  
+  const capabilities: string[] = [];
+  
+  if (model.architecture?.input_modalities) {
+    capabilities.push(`${model.architecture.input_modalities.join(', ')}`);
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground">
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[300px] text-sm">
+          <div className="space-y-1">
+            <p className="text-xs">
+              Supports {capabilities.length > 0 ? 'only ' : ''} {capabilities.join(', ')} and analysis
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      
+      {hasWebSearch && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground">
+              <Globe className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Uses web search</TooltipContent>
+        </Tooltip>
+      )}
+      
+      {isReasoningModel && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground">
+              <Brain className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Advanced reasoning</TooltipContent>
+        </Tooltip>
+      )}
+      
+      {canGenerateImages && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground">
+              <ImageIcon className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Image generation</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
 const groupModelsByProvider = (models: OpenRouterModel[]) => {
   const groups: Record<string, OpenRouterModel[]> = {};
 
@@ -66,20 +146,22 @@ export function ModelSelector({
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const defaultModels = freeModels.map((model) => ({
-    id: model.id,
-    name: model.name,
-    description: "Free model",
-    pricing: {
-      prompt: "0",
-      completion: "0",
+  const defaultModels: OpenRouterModel[] = freeModels.data.map((model) => ({
+    ...model,
+    description: model.description || 'Free model',
+    pricing: model.pricing || {
+      prompt: '0',
+      completion: '0'
     },
-    context_length: 4096,
+    context_length: model.context_length || 4096,
     architecture: {
-      modality: "text",
-      input_modalities: ["text"],
-      output_modalities: ["text"],
+      ...model.architecture,
+      input_modalities: model.architecture?.input_modalities || ['text'],
+      output_modalities: model.architecture?.output_modalities || ['text']
     },
+    supported_parameters: model.supported_parameters || [],
+    top_provider: model.top_provider || { is_moderated: true },
+    per_request_limits: model.per_request_limits || {}
   }));
 
   useEffect(() => {
@@ -140,17 +222,14 @@ export function ModelSelector({
   
   const { free: groupedFreeModels, premium: groupedPremiumModels } = getModelsByType();
 
-  const getModelName = (modelId: string) => {
+  const getModelById = (modelId: string): OpenRouterModel | undefined => {
     const modelFromApi = models.find((m) => m.id === modelId);
-    if (modelFromApi) return modelFromApi.name;
-
-    const modelFromDefaults = defaultModels.find((m) => m.id === modelId);
-    if (modelFromDefaults) return modelFromDefaults.name;
-
-    return modelId;
+    if (modelFromApi) return modelFromApi;
+    return defaultModels.find((m) => m.id === modelId);
   };
 
-  const selectedModelName = getModelName(selectedModel);
+  const selectedModelObj = getModelById(selectedModel);
+  const selectedModelName = selectedModelObj?.name || selectedModel;
   const hasApiKey = Boolean(currentApiKey);
 
   return (
@@ -162,7 +241,9 @@ export function ModelSelector({
         >
           <div className="flex items-center gap-2">
             {getModelIcon(selectedModel)}
-            <span className="truncate">{selectedModelName}</span>
+            <div className="flex items-center justify-between w-full">
+              <span className="truncate">{selectedModelName}</span>
+            </div>
             <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
           </div>
         </Button>
@@ -293,12 +374,16 @@ export function ModelSelector({
                           {getModelIcon(model.id)}
                           <span className="truncate">
                             {model.name}
+                            
                             {!hasApiKey && !isFreeModel(model.id) && (
                               <span className="ml-2 text-xs text-yellow-500">
                                 (API key required)
                               </span>
                             )}
                           </span>
+                          <div className="ml-auto">
+                            {selectedModelObj && <ModelCapabilities model={selectedModelObj} />}
+                          </div>
                         </DropdownMenuItem>
                       ))}
                     </div>

@@ -2,17 +2,30 @@ export interface OpenRouterModel {
     id: string;
     name: string;
     description?: string;
+    created?: number;
     pricing?: {
-      prompt?: string;
-      completion?: string;
+      prompt: string;
+      completion: string;
+      image?: string;
+      request?: string;
+      input_cache_read?: string;
+      input_cache_write?: string;
+      web_search?: string;
+      internal_reasoning?: string;
     };
     context_length?: number;
     architecture: {
       tokenizer?: string;
-      modality: string;
+      modality?: string;
       input_modalities: string[];
       output_modalities: string[];
     };
+    top_provider?: {
+      is_moderated?: boolean;
+    };
+    hugging_face_id?: string;
+    per_request_limits?: Record<string, unknown>;
+    supported_parameters?: string[];
   }
   
   export async function fetchModels(apiKey?: string): Promise<OpenRouterModel[]> {

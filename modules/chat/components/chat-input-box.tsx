@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Globe, Paperclip, ArrowUp, Loader2, StopCircle } from "lucide-react";
+import { Paperclip, ArrowUp, Loader2, StopCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -11,14 +11,26 @@ import {
 } from "@/components/ui/tooltip";
 import { useSettingsStore } from "../store/settings-store";
 import { ModelSelector } from "@/components/model-selector";
+import { WebSearchToggle } from "@/components/web-search-toggle";
+import { freeModels } from "@/constants/models";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string) => void;
   onStop?: () => void;
   loading?: boolean;
+  webSearchConfig?: {
+    enabled: boolean;
+    maxResults?: number;
+    onConfigChange?: (config: { enabled: boolean }) => void;
+  };
 }
 
-const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, onStop, loading }) => {
+const ChatInputBox: React.FC<ChatInputBoxProps> = ({
+  onSend,
+  onStop,
+  loading,
+  webSearchConfig = { enabled: false },
+}) => {
   const [message, setMessage] = useState("");
   const {
     selectedModel,
@@ -62,21 +74,13 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({ onSend, onStop, loading }) 
               currentApiKey={openRouterApiKey}
             />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  className="z-10 flex items-center text-gray-300 hover:text-white bg-transparent hover:bg-gray-500/20 border border-zinc-700 p-1.5 h-auto font-medium cursor-pointer"
-                  disabled={loading}
-                >
-                  <Globe className="size-4" />
-                  <span className="text-xs">Web</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>Web search</p>
-              </TooltipContent>
-            </Tooltip>
+            <WebSearchToggle
+              enabled={webSearchConfig.enabled}
+              onToggle={(enabled) =>
+                webSearchConfig.onConfigChange?.({ enabled })
+              }
+              hasWebSearch={freeModels.data?.some(m => m.id === selectedModel && m.supported_parameters?.includes('tools')) ?? false}
+            />
 
             <Tooltip>
               <TooltipTrigger asChild>

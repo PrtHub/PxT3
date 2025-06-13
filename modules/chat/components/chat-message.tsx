@@ -1,12 +1,15 @@
 "use client";
 
-import React from "react";
-import { Bot, Copy } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bot, Copy, Check, Edit, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -20,6 +23,16 @@ interface CodeBlockProps {
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
+  const [isCopied, setIsCopied] = React.useState(false);
+
+  // Reset copied state after 2 seconds
+  React.useEffect(() => {
+    if (isCopied) {
+      const timer = setTimeout(() => setIsCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCopied]);
+
   const handleCopy = async () => {
     try {
       const text =
@@ -27,8 +40,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
           typeof child === "string" ? child : ""
         )?.join("") || "";
       await navigator.clipboard.writeText(text.trim());
+      setIsCopied(true);
+      toast.success("Code copied to clipboard");
     } catch (error) {
       console.error("Failed to copy text:", error);
+      toast.error("Failed to copy code");
     }
   };
 
@@ -47,8 +63,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
           title="Copy to clipboard"
           type="button"
         >
-          <Copy className="h-3.5 w-3.5" />
-          <span>Copy</span>
+          {isCopied ? (
+            <Check className="h-3.5 w-3.5 text-emerald-400" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          <span>{isCopied ? "Copied!" : "Copy"}</span>
         </button>
       </div>
       <div className="overflow-x-auto">
@@ -84,18 +104,85 @@ export function ChatMessage({
   content,
   isStreaming = false,
 }: ChatMessageProps) {
-  const isUser = role === "user"
+  const isUser = role === "user";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(content);
+  const [isCopied, setIsCopied] = useState(false);
+
+  useEffect(() => {
+    if (isCopied) {
+      const timer = setTimeout(() => setIsCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCopied]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setIsCopied(true);
+      toast.success("Message copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy text:", error);
+      toast.error("Failed to copy message");
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    // TODO: Implement save functionality
+    setIsEditing(false);
+    toast.success("Message updated");
+  };
+
+  const handleCancel = () => {
+    setEditedContent(content);
+    setIsEditing(false);
+  };
 
   return (
-    <div
-      className={cn(
-        "group w-fit",
-        isUser && "ml-auto px-4 pt-5 border border-button/20 bg-button/15 rounded-md mt-20 mb-16"
-      )}
-    >
-      <div className="flex gap-4 m-auto max-w-3xl">
-        <div className="flex-1 overflow-x-auto">
-          <div className="prose prose-invert max-w-none text-white/80">
+    <div className={cn("group w-full flex flex-col items-end", isUser && "mt-20 mb-16")}>
+      <div 
+        className={cn(
+          "w-fit max-w-3xl px-2 pt-5 border rounded-md",
+          isUser ? "border-button/20 bg-button/15 px-4" : "border-transparent px-2",
+          isEditing && "w-full"
+        )}
+      >
+        <div className="flex gap-4 m-auto">
+          <div className="flex-1 overflow-x-auto">
+          {isEditing ? (
+            <div className="flex flex-col gap-2 w-full px-2">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full min-h-[100px] p-2 text-white/90 focus:outline-none border-none outline-none ring-0 focus:ring-0 focus:ring-offset-0 focus:border-none focus:ring-transparent focus:ring-offset-transparent rounded-md"
+                autoFocus
+              />
+              <div className="flex gap-2 justify-end pb-2">
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800/80 hover:text-white cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5 mr-1.5" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  size="sm"
+                  className="h-8 px-3 text-xs bg-white text-black hover:bg-white/80 hover:text-black cursor-pointer"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="prose prose-invert max-w-none text-white/80">
             <ReactMarkdown
               rehypePlugins={[rehypeRaw]}
               components={{
@@ -122,6 +209,38 @@ export function ChatMessage({
                     >
                       {children}
                     </code>
+                  );
+                },
+                table({ children }) {
+                  return (
+                    <div className="my-4 overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        {children}
+                      </table>
+                    </div>
+                  );
+                },
+                thead({ children }) {
+                  return <thead className="bg-zinc-800/50">{children}</thead>;
+                },
+                tbody({ children }) {
+                  return <tbody className="divide-y divide-zinc-700">{children}</tbody>;
+                },
+                tr({ children }) {
+                  return <tr className="hover:bg-zinc-800/30">{children}</tr>;
+                },
+                th({ children }) {
+                  return (
+                    <th className="border-b border-zinc-600 px-4 py-2 text-left font-semibold text-zinc-200">
+                      {children}
+                    </th>
+                  );
+                },
+                td({ children }) {
+                  return (
+                    <td className="border-t border-zinc-700/50 px-4 py-2 text-zinc-300">
+                      {children}
+                    </td>
                   );
                 },
                 p({ children, ...props }) {
@@ -200,15 +319,50 @@ export function ChatMessage({
               <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
             )}
           </div>
+          )}
+          
+          </div>
         </div>
       </div>
+      
+      {isUser && !isEditing && (
+        <div className="flex items-center gap-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+          >
+            {isCopied ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                <span className="text-emerald-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-0.5" />
+                Copy
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+          >
+            <Edit className="h-3.5 w-3.5 mr-0.5" />
+            Edit
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 export function ChatMessageLoading() {
   return (
-    <div className="w-full bg-gradient-to-b from-zinc-900/80 to-transparent py-4 mt-10 rounded-md">
+    <div className="w-full bg-gradient-to-b from-zinc-900/80 to-transparent py-4 mt-20 rounded-md">
       <div className="flex gap-4 px-4 m-auto max-w-3xl">
         <div className="flex-shrink-0">
           <div className="h-9 w-9 rounded-lg bg-emerald-900/40 flex items-center justify-center">
