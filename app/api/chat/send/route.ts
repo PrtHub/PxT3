@@ -1,11 +1,14 @@
-import { db } from "@/db";
-import { chats, messages } from "@/db/schema";
-import { getOpenRouterClient } from "@/lib/open-router";
-import { auth } from "@/auth";
-import { eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { z } from "zod";
+import OpenAI from "openai";
+import { eq } from "drizzle-orm";
+import { Modality } from "@google/genai";
+import { NextRequest, NextResponse } from "next/server";
+
+import { db } from "@/db";
+import { auth } from "@/auth";
+import { chats, messages } from "@/db/schema";
+import { getGeminiClient } from "@/lib/gemini";
+import { getOpenRouterClient } from "@/lib/open-router";
 
 const chatContentPartTextSchema = z.object({
   type: z.literal("text"),
@@ -37,6 +40,7 @@ const sendMessageInputSchema = z.object({
   content: messageContentInputSchema.optional(),
   model: z.string(),
   apiKey: z.string().optional().nullable(),
+  geminiApiKey: z.string().optional().nullable(),
   parentMessageId: z.string().optional().nullable(),
   webSearch: z
     .object({
@@ -65,6 +69,94 @@ export async function POST(req: NextRequest) {
     console.log(`[API] Parsed input for chatId: ${input.chatId || "new chat"}`);
 
     console.log(`[API] Input: ${JSON.stringify(input)}`);
+
+    const isGeminiImageModel = input.model.includes("image");
+
+    if (isGeminiImageModel) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const encoder = new TextEncoder();
+          const enqueue = (data: object) => {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+            );
+          };
+
+          try {
+            // Save user message BEFORE generating the image
+            const userMessageId = crypto.randomUUID();
+            await db.insert(messages).values({
+              id: userMessageId,
+              chatId: input.chatId,
+              role: "user",
+              content: typeof input.content === "string" ? input.content : JSON.stringify(input.content),
+              contentType: typeof input.content === "string" ? "text" : "image",
+              parentId: input.parentMessageId ?? null,
+            });
+
+            const genAI = getGeminiClient(input.geminiApiKey);
+            const prompt =
+              typeof input.content === "string"
+                ? input.content
+                : "Generate an image based on the context.";
+
+            const result = await genAI.models.generateContent({
+              model: input.model,
+              contents: prompt,
+              config: {
+                responseModalities: [Modality.TEXT, Modality.IMAGE],
+              },
+            });
+
+            const imagePart = result.candidates?.[0]?.content?.parts?.find(
+              (p) => !!p.inlineData
+            );
+
+            if (imagePart && imagePart.inlineData) {
+              const imageData = imagePart.inlineData.data;
+              await db.insert(messages).values({
+                id: crypto.randomUUID(),
+                chatId: input.chatId,
+                role: "assistant",
+                content: `data:${imagePart.inlineData.mimeType};base64,${imageData}`,
+                contentType: "image",
+                parentId: userMessageId,
+              });
+              enqueue({
+                event: "image_generated",
+                data: `data:${imagePart.inlineData.mimeType};base64,${imageData}`,
+              });
+            } else {
+              const text = result.text;
+              if (text) {
+                enqueue({ event: "chunk", data: { content: text } });
+              } else {
+                throw new Error("No image or text content generated.");
+              }
+            }
+
+            enqueue({ event: "end", data: {} });
+            controller.close();
+          } catch (error) {
+            console.error("[GEMINI_API_ERROR]", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred";
+            enqueue({ event: "error", data: { error: errorMessage } });
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
 
     const openrouter = getOpenRouterClient(input.apiKey);
 

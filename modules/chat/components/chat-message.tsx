@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -56,7 +57,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
   return (
     <div className="relative my-4 rounded-lg overflow-hidden bg-[#1E1E1E]">
       <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/80 border-b border-zinc-800">
-        <span className="text-xs font-medium text-zinc-300 font-mono">{language}</span>
+        <span className="text-xs font-medium text-zinc-300 font-mono">
+          {language}
+        </span>
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-zinc-800 transition-colors"
@@ -80,15 +83,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
           wrapLongLines={false}
           customStyle={{
             margin: 0,
-            padding: '1.25rem',
-            fontSize: '0.875rem',
-            lineHeight: '1.5',
-            backgroundColor: 'transparent',
+            padding: "1.25rem",
+            fontSize: "0.875rem",
+            lineHeight: "1.5",
+            backgroundColor: "transparent",
           }}
           codeTagProps={{
             style: {
-              fontFamily: 'var(--font-mono, monospace)',
-              display: 'block',
+              fontFamily: "var(--font-mono, monospace)",
+              display: "block",
             },
           }}
         >
@@ -132,7 +135,6 @@ export function ChatMessage({
   };
 
   const handleSave = () => {
-    // TODO: Implement save functionality
     setIsEditing(false);
     toast.success("Message updated");
   };
@@ -143,188 +145,231 @@ export function ChatMessage({
   };
 
   return (
-    <div className={cn("group w-full flex flex-col items-end", isUser && "mt-20 mb-16")}>
-      <div 
+    <div
+      className={cn(
+        "group w-full flex flex-col items-end",
+        isUser && "mt-20 mb-10"
+      )}
+    >
+      <div
         className={cn(
           "w-fit max-w-3xl px-2 pt-5 border rounded-md",
-          isUser ? "border-button/20 bg-button/15 px-4" : "border-transparent px-2",
+          isUser
+            ? "border-button/20 bg-button/15 px-4"
+            : "border-transparent px-2",
           isEditing && "w-full"
         )}
       >
         <div className="flex gap-4 m-auto">
           <div className="flex-1 overflow-x-auto">
-          {isEditing ? (
-            <div className="flex flex-col gap-2 w-full px-2">
-              <Textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full min-h-[100px] p-2 text-white/90 focus:outline-none border-none outline-none ring-0 focus:ring-0 focus:ring-offset-0 focus:border-none focus:ring-transparent focus:ring-offset-transparent rounded-md"
-                autoFocus
-              />
-              <div className="flex gap-2 justify-end pb-2">
-                <Button
-                  onClick={handleCancel}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3 text-xs bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800/80 hover:text-white cursor-pointer"
-                >
-                  <X className="h-3.5 w-3.5 mr-1.5" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  size="sm"
-                  className="h-8 px-3 text-xs bg-white text-black hover:bg-white/80 hover:text-black cursor-pointer"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  Save
-                </Button>
+            {isEditing ? (
+              <div className="flex flex-col gap-2 w-full px-2">
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full min-h-[100px] p-2 text-white/90 focus:outline-none border-none outline-none ring-0 focus:ring-0 focus:ring-offset-0 focus:border-none focus:ring-transparent focus:ring-offset-transparent rounded-md"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end pb-2">
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs bg-transparent border-zinc-700 text-zinc-300 hover:bg-zinc-800/80 hover:text-white cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1.5" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    size="sm"
+                    className="h-8 px-3 text-xs bg-white text-black hover:bg-white/80 hover:text-black cursor-pointer"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Save
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="prose prose-invert max-w-none text-white/80">
-            <ReactMarkdown
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                code({ className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || "");
+            ) : (
+              <div className="prose prose-invert max-w-none text-white/80">
+                {content.startsWith("data:image") ? (
+                  <div className="relative w-full aspect-video">
+                    <img
+                      src={`${content}`}
+                      alt="Generated content"
+                      className="object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <ReactMarkdown
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || "");
 
-                  if (match) {
-                    return (
-                      <div className="my-4">
-                        <CodeBlock language={match[1]}>
-                          {Array.isArray(children)
-                            ? children.join("")
-                            : String(children).replace(/\n$/, "")}
-                        </CodeBlock>
-                      </div>
-                    );
-                  }
-
-
-                  return (
-                    <code
-                      className="bg-zinc-800/50 rounded px-1.5 py-0.5 text-sm font-mono text-emerald-300"
-                      {...props}
-                    >
-                      {children}
-                    </code>
-                  );
-                },
-                table({ children }) {
-                  return (
-                    <div className="my-4 overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        {children}
-                      </table>
-                    </div>
-                  );
-                },
-                thead({ children }) {
-                  return <thead className="bg-zinc-800/50">{children}</thead>;
-                },
-                tbody({ children }) {
-                  return <tbody className="divide-y divide-zinc-700">{children}</tbody>;
-                },
-                tr({ children }) {
-                  return <tr className="hover:bg-zinc-800/30">{children}</tr>;
-                },
-                th({ children }) {
-                  return (
-                    <th className="border-b border-zinc-600 px-4 py-2 text-left font-semibold text-zinc-200">
-                      {children}
-                    </th>
-                  );
-                },
-                td({ children }) {
-                  return (
-                    <td className="border-t border-zinc-700/50 px-4 py-2 text-zinc-300">
-                      {children}
-                    </td>
-                  );
-                },
-                p({ children, ...props }) {
-                  return (
-                    <p className="mb-5 leading-relaxed text-zinc-200" {...props}>
-                      {children}
-                    </p>
-                  );
-                },
-                ul({ children, ...props }) {
-                  return (
-                    <ul className="list-disc pl-6 mb-5 space-y-2.5 text-zinc-200" {...props}>
-                      {children}
-                    </ul>
-                  );
-                },
-                ol({ children, ...props }) {
-                  return (
-                    <ol className="list-decimal pl-6 mb-5 space-y-2.5 text-zinc-200" {...props}>
-                      {children}
-                    </ol>
-                  );
-                },
-                li({ children, ...props }) {
-                  return (
-                    <li className="mb-1.5 pl-1" {...props}>
-                      {children}
-                    </li>
-                  );
-                },
-                h1({ children, ...props }) {
-                  return (
-                    <h1 className="text-2xl font-bold text-white mt-8 mb-4" {...props}>
-                      {children}
-                    </h1>
-                  );
-                },
-                h2({ children, ...props }) {
-                  return (
-                    <h2 className="text-xl font-bold text-white mt-6 mb-3" {...props}>
-                      {children}
-                    </h2>
-                  );
-                },
-                h3({ children, ...props }) {
-                  return (
-                    <h3 className="text-lg font-bold text-white mt-5 mb-2.5" {...props}>
-                      {children}
-                    </h3>
-                  );
-                },
-                blockquote({ children, ...props }) {
-                  return (
-                    <blockquote className="border-l-4 border-zinc-600 pl-4 py-1 my-4 text-zinc-300 italic" {...props}>
-                      {children}
-                    </blockquote>
-                  );
-                },
-                a({ children, ...props }) {
-                  return (
-                    <a
-                      className="text-emerald-400 hover:underline hover:text-emerald-300 transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      {...props}
-                    >
-                      {children}
-                    </a>
-                  );
-                },
-              }}
-            >
-              {content}
-            </ReactMarkdown>
-            {isStreaming && (
-              <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
+                      if (match) {
+                        return (
+                          <div className="my-4">
+                            <CodeBlock language={match[1]}>
+                              {Array.isArray(children)
+                                ? children.join("")
+                                : String(children).replace(/\n$/, "")}
+                            </CodeBlock>
+                          </div>
+                        );
+                      }
+                      return (
+                        <code
+                          className="bg-zinc-800/50 rounded px-1.5 py-0.5 text-sm font-mono text-emerald-300"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    },
+                    table({ children }) {
+                      return (
+                        <div className="my-4 overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            {children}
+                          </table>
+                        </div>
+                      );
+                    },
+                    thead({ children }) {
+                      return (
+                        <thead className="bg-zinc-800/50">{children}</thead>
+                      );
+                    },
+                    tbody({ children }) {
+                      return (
+                        <tbody className="divide-y divide-zinc-700">
+                          {children}
+                        </tbody>
+                      );
+                    },
+                    tr({ children }) {
+                      return (
+                        <tr className="hover:bg-zinc-800/30">{children}</tr>
+                      );
+                    },
+                    th({ children }) {
+                      return (
+                        <th className="border-b border-zinc-600 px-4 py-2 text-left font-semibold text-zinc-200">
+                          {children}
+                        </th>
+                      );
+                    },
+                    td({ children }) {
+                      return (
+                        <td className="border-t border-zinc-700/50 px-4 py-2 text-zinc-300">
+                          {children}
+                        </td>
+                      );
+                    },
+                    p({ children, ...props }) {
+                      return (
+                        <p
+                          className="mb-5 leading-relaxed text-zinc-200"
+                          {...props}
+                        >
+                          {children}
+                        </p>
+                      );
+                    },
+                    ul({ children, ...props }) {
+                      return (
+                        <ul
+                          className="list-disc pl-6 mb-5 space-y-2.5 text-zinc-200"
+                          {...props}
+                        >
+                          {children}
+                        </ul>
+                      );
+                    },
+                    ol({ children, ...props }) {
+                      return (
+                        <ol
+                          className="list-decimal pl-6 mb-5 space-y-2.5 text-zinc-200"
+                          {...props}
+                        >
+                          {children}
+                        </ol>
+                      );
+                    },
+                    li({ children, ...props }) {
+                      return (
+                        <li className="mb-1.5 pl-1" {...props}>
+                          {children}
+                        </li>
+                      );
+                    },
+                    h1({ children, ...props }) {
+                      return (
+                        <h1
+                          className="text-2xl font-bold text-white mt-8 mb-4"
+                          {...props}
+                        >
+                          {children}
+                        </h1>
+                      );
+                    },
+                    h2({ children, ...props }) {
+                      return (
+                        <h2
+                          className="text-xl font-bold text-white mt-6 mb-3"
+                          {...props}
+                        >
+                          {children}
+                        </h2>
+                      );
+                    },
+                    h3({ children, ...props }) {
+                      return (
+                        <h3
+                          className="text-lg font-bold text-white mt-5 mb-2.5"
+                          {...props}
+                        >
+                          {children}
+                        </h3>
+                      );
+                    },
+                    blockquote({ children, ...props }) {
+                      return (
+                        <blockquote
+                          className="border-l-4 border-zinc-600 pl-4 py-1 my-4 text-zinc-300 italic"
+                          {...props}
+                        >
+                          {children}
+                        </blockquote>
+                      );
+                    },
+                    a({ children, ...props }) {
+                      return (
+                        <a
+                          className="text-emerald-400 hover:underline hover:text-emerald-300 transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          {...props}
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+                )}
+                {isStreaming && (
+                  <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
+                )}
+              </div>
             )}
-          </div>
-          )}
-          
           </div>
         </div>
       </div>
-      
+
       {isUser && !isEditing && (
         <div className="flex items-center gap-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button

@@ -33,7 +33,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   });
 
   const utils = trpc.useUtils();
-  const { selectedModel, openRouterApiKey } = useSettingsStore();
+  const { selectedModel, openRouterApiKey, geminiApiKey } = useSettingsStore();
 
   const handleWebSearchConfigChange = useCallback((config: { enabled: boolean }) => {
     setWebSearchConfig(prev => ({ ...prev, ...config }));
@@ -95,8 +95,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
           body: JSON.stringify({
             chatId: initialChatId,
             content: userMessage,
-            model: selectedModel || model,
-            apiKey: openRouterApiKey,
+            model: selectedModel ?? model,
+            apiKey: openRouterApiKey, // For OpenRouter
+            geminiApiKey: geminiApiKey, // For Gemini
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
           }),
           headers: { "Content-Type": "application/json" },
@@ -143,8 +144,19 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               if (event.event === "userMessageCreated") {
                 latestUserMessageIdRef.current = event.data.userMessageId;
               } else if (event.event === "chunk") {
-                assistantContentRef.current += event.data.content || "";
-                setStreamingResponse(assistantContentRef.current);
+                const content = event.data.content;
+                if (content) {
+                  assistantContentRef.current += content;
+                  setStreamingResponse(assistantContentRef.current);
+                }
+              } else if (event.event === "image_generated") {
+                const imageUrl = event.data;
+                setMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", content: imageUrl },
+                ]);
+                assistantContentRef.current = "";
+                setStreamingResponse("");
               } else if (event.event === "end") {
                 utils.chat.getChatsForUser.invalidate();
               }
@@ -186,6 +198,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       initialChatId,
       selectedModel,
       openRouterApiKey,
+      geminiApiKey,
       setMessages,
       setLoading,
       setStreamingResponse,

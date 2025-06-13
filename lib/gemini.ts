@@ -1,5 +1,12 @@
-import { GoogleGenAI } from "@google/genai"
+import { GoogleGenAI } from "@google/genai";
 
-export const gemini = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY!
-});
+export const getGeminiClient = (userApiKey?: string | null) => {
+  const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("No API key provided");
+  }
+
+  return new GoogleGenAI({
+    apiKey,
+  });
+};
