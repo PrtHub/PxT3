@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Pencil } from "lucide-react";
+import { Share2, EditIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/trpc/client";
@@ -66,9 +66,9 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
   return (
     <>
       <div className="absolute top-0 left-0 right-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
-        <div className="max-w-3xl mx-auto w-full py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto w-full py-3 px-4 flex items-center justify-between">
           <div className="flex-1 min-w-0 flex items-center group">
-            <h1 className="font-bold text-lg truncate mr-2">
+            <h1 className="font-bold text-base sm:text-lg truncate mr-1 md:pl-0 pl-10">
               {title}
             </h1>
             <TooltipProvider>
@@ -80,7 +80,7 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
                     className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     onClick={handleEditClick}
                   >
-                    <Pencil className="h-3 w-3" />
+                    <EditIcon className="h-3 w-3" />
                     <span className="sr-only">Edit title</span>
                   </Button>}
                 </TooltipTrigger>

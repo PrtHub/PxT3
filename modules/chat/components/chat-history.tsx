@@ -13,9 +13,15 @@ import { trpc } from "@/trpc/client";
 import { usePathname } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const ChatHistory = () => {
+interface ChatHistoryProps {
+  searchQuery?: string | null;
+}
+
+const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   const path = usePathname();
-  const { data: chats, isLoading } = trpc.chat.getChatsForUser.useQuery();
+  const { data: chats, isLoading } = trpc.chat.getChatsForUser.useQuery({
+    searchQuery,
+  });
 
   if (isLoading) {
     return (

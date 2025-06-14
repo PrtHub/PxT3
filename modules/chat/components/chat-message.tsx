@@ -151,7 +151,7 @@ export function ChatMessage({
   return (
     <div
       className={cn(
-        "group w-full flex flex-col",
+        "group w-full flex flex-col px-4",
         isUser ? "items-end" : "items-start",
         isUser && "mt-20 mb-10"
       )}

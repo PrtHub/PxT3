@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Paperclip, ArrowUp, Loader2, StopCircle } from "lucide-react";
@@ -13,6 +13,7 @@ import { useSettingsStore } from "../store/settings-store";
 import { ModelSelector } from "@/components/model-selector/model-selector";
 import { WebSearchToggle } from "@/components/web-search-toggle";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string) => void;
@@ -23,6 +24,7 @@ interface ChatInputBoxProps {
     maxResults?: number;
     onConfigChange?: (config: { enabled: boolean }) => void;
   };
+  message?: string | null;
 }
 
 const ChatInputBox: React.FC<ChatInputBoxProps> = ({
@@ -30,8 +32,10 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   onStop,
   loading,
   webSearchConfig = { enabled: false },
+  message: initialMessage,
 }) => {
-  const [message, setMessage] = useState("");
+ const path = usePathname();
+
   const {
     selectedModel,
     setSelectedModel,
@@ -42,14 +46,22 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     geminiApiKey,
   } = useSettingsStore();
 
+  const [inputValue, setInputValue] = useState(initialMessage || "");
+
+  useEffect(() => {
+    if (initialMessage !== undefined) {
+      setInputValue(initialMessage || "");
+    }
+  }, [initialMessage]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (message.trim() && !loading) {
+      if (inputValue.trim() && !loading) {
         if (onSend) {
-          onSend(message, selectedModel);
+          onSend(inputValue, selectedModel);
         }
-        setMessage("");
+        setInputValue("");
       }
     }
   };
@@ -66,13 +78,20 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       m.architecture?.input_modalities?.includes("file")
   );
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    onSend?.(inputValue.trim(), selectedModel);
+    setInputValue("");
+  };
+
   return (
-    <div className="absolute bottom-3 left-0 right-0 max-w-3xl mx-auto flex items-center justify-center h-28">
+    <div className="absolute bottom-3 left-0 right-0 max-w-3xl mx-auto flex items-center justify-center h-28 px-4">
       <section className="w-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-t-md p-4">
         <div className="mb-4">
           <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             onKeyUp={handleKeyPress}
             placeholder="Type your message here..."
             className="bg-transparent border-none text-gray-300 placeholder-gray-500 text-base p-0 h-auto min-h-[60px] resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -108,7 +127,10 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
-                  className={cn("text-gray-300 bg-transparent hover:text-white hover:bg-gray-500/20 border border-zinc-700 h-7 p-1.5 cursor-pointer disabled:cursor-not-allowed", !hasImageInput && "opacity-50 cursor-not-allowed")}
+                  className={cn(
+                    "text-gray-300 bg-transparent hover:text-white hover:bg-gray-500/20 border border-zinc-700 h-7 p-1.5 cursor-pointer disabled:cursor-not-allowed",
+                    !hasImageInput && "opacity-50 cursor-not-allowed"
+                  )}
                   // disabled={!hasImageInput || !hasFileInput}
                 >
                   <Paperclip className="size-4" />
@@ -128,15 +150,8 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
 
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => {
-                if (message.trim() && !loading) {
-                  if (onSend) {
-                    onSend(message, selectedModel);
-                  }
-                  setMessage("");
-                }
-              }}
-              disabled={!message.trim() || loading}
+              onClick={handleSubmit}
+              disabled={!inputValue.trim() || loading}
               size="icon"
               className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
             >
@@ -146,7 +161,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                 <ArrowUp className="size-4" />
               )}
             </Button>
-            {loading && (
+            {path !== "/" && loading && (
               <Button
                 variant="outline"
                 size="icon"

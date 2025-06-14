@@ -43,6 +43,13 @@
       "when": 1749808164854,
       "tag": "0005_famous_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749913982657,
+      "tag": "0006_white_freak",
+      "breakpoints": true
     }
   ]
 }

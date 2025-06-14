@@ -7,6 +7,7 @@ import {
   boolean,
   pgEnum,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 import { relations } from "drizzle-orm";
@@ -97,9 +98,12 @@ export const chats = pgTable("chats", {
   title: text("title").notNull().default("New Chat"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-
   shareId: text("share_id").unique().notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
+}, (table) => {
+  return {
+    titleIdx: index("chats_title_idx").on(table.title),
+  };
 });
 
 export const chatsRelations = relations(chats, ({ one, many }) => ({

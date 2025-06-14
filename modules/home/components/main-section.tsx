@@ -1,15 +1,30 @@
+"use client";
+
 import { cn } from "@/lib/utils";
-import React from "react";
-import {
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import React, { useState, useEffect } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import ChatHistory from "@/modules/chat/components/chat-history";
+import { SearchCommand } from "@/components/search-command";
 
 const MainSection = () => {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    setIsSearching(searchQuery.trim() !== "");
+  }, [searchQuery]);
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
+
   return (
     <>
       <header className="px-4 pt-4 pb-2 flex items-center justify-between h-[40px]">
@@ -25,21 +40,22 @@ const MainSection = () => {
         >
           PxT3.chat
         </h2>
-        <section className="flex items-center justify-center gap-x-2 group-data-[collapsible=icon]:bg-background group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:rounded group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:left-2 group-data-[collapsible=icon]:w-20">
-          <SidebarTrigger className="group-data-[collapsible=icon]:ml-3" />
+        <section className="md:flex items-center justify-center group-data-[collapsible=icon]:bg-background group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:rounded group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:left-2 hidden">
+          <SidebarTrigger className="group-data-[collapsible=icon]:ml-3 w-fit px-2" />
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-gray-700 hidden group-data-[collapsible=icon]:block"
+            onClick={() => setOpen(true)}
+            className="hover:bg-gray-700 w-fit px-2 hidden group-data-[collapsible=icon]:block cursor-pointer"
           >
-            <Search />
+           <Search className="size-4" />
           </Button>
         </section>
       </header>
 
       <Link
         href="/"
-        className="px-4 py-2 w-full group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out"
+        className="px-4 py-2 w-full group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 transition-all"
       >
         <Button
           variant="default"
@@ -51,17 +67,32 @@ const MainSection = () => {
         </Button>
       </Link>
 
-      <div className="px-4 py-2 w-full group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out">
+      <div className="px-4 py-2 w-full group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 transition-all">
         <div className="relative flex items-center bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-md px-4 py-1 w-full h-10 border border-zinc-700 shadow-2xl">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-white/60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/60" />
           <Input
             type="search"
-            placeholder="Search"
-            className="pl-5 pr-2 -mt-0.5 bg-transparent text-white placeholder:text-white/50 text-lg font-normal border-0 focus:ring-0 w-full outline-none"
+            placeholder="Search chats..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-5 pr-5 -mt-0.5 bg-transparent text-white placeholder:text-white/50 text-sm font-normal border-0 focus:ring-0 w-full outline-none"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearSearch}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Clear search"
+            >
+              <X className="size-4 text-white/60" />
+            </Button>
+          )}
         </div>
       </div>
-      <ChatHistory />
+
+      <SearchCommand open={open} onOpenChange={setOpen} />
+      <ChatHistory searchQuery={isSearching ? debouncedSearchQuery : null} />
     </>
   );
 };

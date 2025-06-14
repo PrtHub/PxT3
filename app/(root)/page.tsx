@@ -5,17 +5,15 @@ import Introduction from '@/modules/home/section/Introduction';
 import ChatInputBox from '@/modules/chat/components/chat-input-box';
 import { useRouter } from 'next/navigation';
 import { useInitialMessageStore } from '@/modules/chat/store/initial-message-store';
-import { useSettingsStore } from '@/modules/chat/store/settings-store';
 
 const Homepage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
+  
+  const {message} = useInitialMessageStore()
 
-  const {geminiApiKey, selectedModel} = useSettingsStore()
-
-  console.log("geminiApiKey", geminiApiKey)
-  console.log("selectedModel", selectedModel)
+  console.log("message", message)
 
   const handleSendMessage = async (userMessage: string) => {
     setLoading(true);
@@ -45,7 +43,7 @@ const Homepage = () => {
   return (  
     <main className='w-full min-h-screen overflow-y-hidden'>
       <Introduction />
-      <ChatInputBox onSend={handleSendMessage} loading={loading} />
+      <ChatInputBox onSend={handleSendMessage} message={message} loading={loading} />
     </main>
   );
 };

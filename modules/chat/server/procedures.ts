@@ -1,14 +1,21 @@
 import { db } from "@/db";
-import { attachments, chats, messages } from "@/db/schema";
+import {  chats } from "@/db/schema";
 import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ilike } from "drizzle-orm";
 import { z } from "zod";
 
 
 export const ChatRouter = createTRPCRouter({
-  getChatsForUser: protectedProcedure.query(async ({ ctx }) => {
+  getChatsForUser: protectedProcedure
+  .input(
+    z.object({
+      searchQuery: z.string().optional().nullable(),
+    })
+  )
+  .query(async ({ ctx, input }) => {
     const { userId } = ctx;
+    const { searchQuery } = input;
 
     if (!userId) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -24,6 +31,13 @@ export const ChatRouter = createTRPCRouter({
       .from(chats)
       .where(eq(chats.userId, userId))
       .orderBy(desc(chats.updatedAt));
+
+    if (searchQuery) {
+      const filteredChats = userChats.filter((chat) =>
+        chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      return filteredChats;
+    }
 
     return userChats;
   }),
@@ -136,74 +150,50 @@ export const ChatRouter = createTRPCRouter({
           .set({ title })
           .where(eq(chats.id, chatId));
       }),
-      uploadAttachment: protectedProcedure
+
+    searchChats: protectedProcedure
       .input(
         z.object({
-          messageId: z.string(),
-          filename: z.string(),
-          mimeType: z.string(),
-          size: z.number(),
-          base64Content: z.string(), // Keep this for future actual upload
+          query: z.string().min(1, "Search query cannot be empty"),
         })
       )
-      .mutation(async ({ ctx, input }) => {
+      .query(async ({ ctx, input }) => {
         const { userId } = ctx;
-        const { messageId, filename, mimeType, size } = input;
+        const { query } = input;
 
-        if (!userId) {
-          throw new TRPCError({ code: "UNAUTHORIZED" });
-        }
+        try {
+          if (!userId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "User not authenticated"
+            });
+          }
 
-        // 1. Verify messageId exists and get its chatId
-        const [existingMessage] = await db
-          .select({
-            id: messages.id,
-            chatId: messages.chatId,
-          })
-          .from(messages)
-          .where(eq(messages.id, messageId))
-          .limit(1);
+          const searchQuery = db
+            .select({
+              id: chats.id,
+              title: chats.title,
+              userId: chats.userId,
+              updatedAt: chats.updatedAt,
+            })
+            .from(chats);
 
-        if (!existingMessage) {
+          const filteredQuery = searchQuery.where(
+            and(
+              eq(chats.userId, userId as string),
+              ilike(chats.title, `%${query}%`)
+            )
+          );
+
+          const results = await filteredQuery.orderBy(desc(chats.updatedAt));
+          return results;
+        } catch (error) {
+          console.error("Error searching chats:", error);
           throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Message not found.",
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to search chats",
           });
         }
-
-        const [owningChat] = await db
-          .select({
-            userId: chats.userId,
-          })
-          .from(chats)
-          .where(eq(chats.id, existingMessage.chatId))
-          .limit(1);
-
-        if (!owningChat || owningChat.userId !== userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "You are not authorized to add attachments to this message.",
-          });
-        }
-
-        const simulatedStorageKey = `attachments/${crypto.randomUUID()}-${filename}`;
-        const simulatedUrl = `https://example.com/${simulatedStorageKey}`;
-
-        const [newAttachment] = await db
-          .insert(attachments)
-          .values({
-            id: crypto.randomUUID(),
-            userId: userId,
-            messageId: messageId,
-            storageKey: simulatedStorageKey,
-            url: simulatedUrl,
-            filename: filename,
-            mimeType: mimeType,
-            size: size,
-            status: "completed",
-          })
-          .returning();
-
-        return newAttachment;
       }),
+
 });
