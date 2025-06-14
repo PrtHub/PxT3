@@ -1,0 +1,1 @@
+ALTER TABLE "streaming_states" ALTER COLUMN "messageId" DROP NOT NULL;

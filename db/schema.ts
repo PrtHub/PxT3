@@ -22,6 +22,12 @@ export const attachmentStatusEnum = pgEnum("attachment_status", [
   "completed",
   "failed",
 ]);
+export const streamingStatusEnum = pgEnum("streaming_status", [
+  "streaming",
+  "completed",
+  "error",
+  "interrupted"
+]);
 
 export const users = pgTable("user", {
   id: text("id").notNull().primaryKey(),
@@ -199,5 +205,32 @@ export const userApiKeysRelations = relations(userApiKeys, ({ one }) => ({
   user: one(users, {
     fields: [userApiKeys.userId],
     references: [users.id],
+  }),
+}));
+
+export const streamingStates = pgTable("streaming_states", {
+  id: text("id").primaryKey().notNull(),
+  chatId: text("chatId")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  messageId: text("messageId")
+    .references(() => messages.id, { onDelete: "cascade" }),
+  content: text("content").notNull().default(""),
+  status: streamingStatusEnum("status").notNull().default("streaming"),
+  lastChunkIndex: integer("last_chunk_index").notNull().default(0),
+  totalChunks: integer("total_chunks").notNull().default(0),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const streamingStatesRelations = relations(streamingStates, ({ one }) => ({
+  chat: one(chats, {
+    fields: [streamingStates.chatId],
+    references: [chats.id],
+  }),
+  message: one(messages, {
+    fields: [streamingStates.messageId],
+    references: [messages.id],
   }),
 }));
