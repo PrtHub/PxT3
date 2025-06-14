@@ -53,10 +53,18 @@ export function ModelList({
     <div className={!isFree ? "mb-2" : "mt-4"}>
       <div className="flex flex-col items-start gap-2 py-4 text-xs font-medium text-muted-foreground">
         <span className="text-emerald-500 text-sm">{title}</span>
-        {!hasApiKey && title === "Image Gen" && (
-          <span className="text-xs text-muted-foreground">
-            Important: To use image model, you need to add an API key.
-          </span>
+        {title === "Image Gen" && (
+          <div className="flex flex-col gap-1 text-[10px] text-muted-foreground">
+            {!hasApiKey ? (
+              <span className="text-[10px] text-amber-400">
+                For higher limits, add your own API key
+              </span>
+            ) : (
+              <span className="text-emerald-400 text-[10px]">
+                ✓ Using your API key
+              </span>
+            )}
+          </div>
         )}
         <div className="h-px flex-1 bg-border" />
       </div>
@@ -76,24 +84,20 @@ export function ModelList({
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (model.id.includes("image") && !hasApiKey) {
-                    onApiKeyClick?.();
-                  } else {
-                    onModelSelect(model.id);
-                  }
+                  onModelSelect(model.id);
                 }}
               >
                 {getModelIcon(model.id)}
-                <span className={cn("truncate", !hasApiKey && !isFreeModel(model.id) && model.id.includes("image") && "opacity-50 cursor-not-allowed")}>
-                  {model.name}
-                  {!hasApiKey &&
-                    !isFreeModel(model.id) &&
-                    model.id.includes("image") && (
-                      <span className="ml-2 text-xs text-yellow-500">
-                        (API key required)
-                      </span>
-                    )}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={cn("truncate")}>
+                    {model.name}
+                  </span>
+                  {model.id.includes("image") && !isFreeModel(model.id) && (
+                    <span className="text-xs text-amber-400">
+                      {hasApiKey ? "✓ Your key" : "✓ Free tier"}
+                    </span>
+                  )}
+                </div>
                 <div className="ml-auto">
                  {!model.id.includes("image") && <ModelCapabilities model={selectedModelObj || model} />}
                   {model.id.includes("image") &&

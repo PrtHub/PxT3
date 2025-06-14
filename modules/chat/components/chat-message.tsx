@@ -158,10 +158,12 @@ export function ChatMessage({
     >
       <div
         className={cn(
-          "w-fit max-w-3xl px-2  border rounded-md",
+          "w-fit max-w-3xl border rounded-md",
           isUser
             ? "border-button/20 bg-button/15 px-4 pt-5"
-            : "border-zinc-700/50 bg-zinc-800/50 p-4",
+            : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
+          content.length === 0 && "w-fit px-4 py-2",
+
           isEditing && "w-full"
         )}
       >
@@ -199,7 +201,7 @@ export function ChatMessage({
               <div className="prose prose-invert max-w-none text-white/80">
                 {isImageMessage ? (
                   content ? (
-                    <div className="aspect-square w-full h-[400px] overflow-hidden">
+                    <div className="aspect-square w-full h-[400px] pb-4 overflow-hidden">
                       <img
                         src={content}
                         alt="Generated content"
@@ -377,12 +379,15 @@ export function ChatMessage({
                   {content}
                 </ReactMarkdown>
                 )}
-                {isStreaming && (
-                  <div className="flex items-center space-x-1 h-6 ml-2">
+                {content.length === 0 && isStreaming && (
+                  <div className="flex items-center space-x-1 h-6">
                     <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
+                )}
+                 {isStreaming && content.length > 0 && (
+                  <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
                 )}
               </div>
             )}

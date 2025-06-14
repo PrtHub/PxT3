@@ -241,7 +241,7 @@ export function ModelSelector({
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-96 p-4" align="start">
+        <DropdownMenuContent className="w-[450px] p-4" align="start">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="font-medium">Available Models</h1>

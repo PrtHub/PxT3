@@ -66,7 +66,7 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
   return (
     <>
       <div className="absolute top-0 left-0 right-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
-        <div className="max-w-3xl mx-auto w-full px-4 py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto w-full py-3 flex items-center justify-between">
           <div className="flex-1 min-w-0 flex items-center group">
             <h1 className="font-bold text-lg truncate mr-2">
               {title}

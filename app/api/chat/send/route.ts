@@ -84,15 +84,34 @@ export async function POST(req: NextRequest) {
           };
 
           try {
-            // Save user message BEFORE generating the image
+            const currentChatId = input.chatId;
+
+            const [existingChat] = await db
+              .select({ userId: chats.userId })
+              .from(chats)
+              .where(eq(chats.id, currentChatId))
+              .limit(1);
+
+            if (!existingChat) {
+              throw new Error("Chat not found.");
+            }
+            if (existingChat.userId !== userId) {
+              throw new Error("You are not authorized to access this chat.");
+            }
+
             const userMessageId = crypto.randomUUID();
             await db.insert(messages).values({
               id: userMessageId,
-              chatId: input.chatId,
+              chatId: currentChatId,
               role: "user",
               content: typeof input.content === "string" ? input.content : JSON.stringify(input.content),
               contentType: typeof input.content === "string" ? "text" : "image",
               parentId: input.parentMessageId ?? null,
+            });
+
+            enqueue({
+              event: "userMessageCreated",
+              data: { userMessageId: userMessageId },
             });
 
             const genAI = getGeminiClient(input.geminiApiKey);
@@ -124,14 +143,16 @@ export async function POST(req: NextRequest) {
                 useUniqueFileName: true,
               });
 
+              const aiMessageId = crypto.randomUUID();
               await db.insert(messages).values({
-                id: crypto.randomUUID(),
-                chatId: input.chatId,
+                id: aiMessageId,
+                chatId: currentChatId,
                 role: "assistant",
                 content: uploadResult.url,
                 contentType: "image",
                 parentId: userMessageId,
               });
+
               enqueue({
                 event: "image_generated",
                 data: uploadResult.url,
@@ -139,6 +160,15 @@ export async function POST(req: NextRequest) {
             } else {
               const text = result.text;
               if (text) {
+                const aiMessageId = crypto.randomUUID();
+                await db.insert(messages).values({
+                  id: aiMessageId,
+                  chatId: currentChatId,
+                  role: "assistant",
+                  contentType: "text",
+                  content: text,
+                  parentId: userMessageId,
+                });
                 enqueue({ event: "chunk", data: { content: text } });
               } else {
                 throw new Error("No image or text content generated.");

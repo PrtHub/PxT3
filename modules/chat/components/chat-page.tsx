@@ -96,8 +96,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             chatId: initialChatId,
             content: userMessage,
             model: selectedModel ?? model,
-            apiKey: openRouterApiKey, // For OpenRouter
-            geminiApiKey: geminiApiKey, // For Gemini
+            apiKey: openRouterApiKey,
+            geminiApiKey: geminiApiKey,
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
           }),
           headers: { "Content-Type": "application/json" },
