@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 import { chats, messages } from "@/db/schema";
 import { getGeminiClient } from "@/lib/gemini";
 import { getOpenRouterClient } from "@/lib/open-router";
+import { imagekit } from "@/lib/image-kit";
 
 const chatContentPartTextSchema = z.object({
   type: z.literal("text"),
@@ -114,17 +115,26 @@ export async function POST(req: NextRequest) {
 
             if (imagePart && imagePart.inlineData) {
               const imageData = imagePart.inlineData.data;
+
+              const uploadResult = await imagekit.upload({
+                file: imageData ?? "",
+                fileName: `gemini-image-${Date.now()}.jpg`,
+                folder: `/chat_images`,
+                isPrivateFile: false,
+                useUniqueFileName: true,
+              });
+
               await db.insert(messages).values({
                 id: crypto.randomUUID(),
                 chatId: input.chatId,
                 role: "assistant",
-                content: `data:${imagePart.inlineData.mimeType};base64,${imageData}`,
+                content: uploadResult.url,
                 contentType: "image",
                 parentId: userMessageId,
               });
               enqueue({
                 event: "image_generated",
-                data: `data:${imagePart.inlineData.mimeType};base64,${imageData}`,
+                data: uploadResult.url,
               });
             } else {
               const text = result.text;

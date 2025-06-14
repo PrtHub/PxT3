@@ -144,19 +144,24 @@ export function ChatMessage({
     setIsEditing(false);
   };
 
+  const isImageMessage =
+    content.startsWith("data:image") ||
+    content.startsWith("https://ik.imagekit.io/");
+
   return (
     <div
       className={cn(
-        "group w-full flex flex-col items-end",
+        "group w-full flex flex-col",
+        isUser ? "items-end" : "items-start",
         isUser && "mt-20 mb-10"
       )}
     >
       <div
         className={cn(
-          "w-fit max-w-3xl px-2 pt-5 border rounded-md",
+          "w-fit max-w-3xl px-2  border rounded-md",
           isUser
-            ? "border-button/20 bg-button/15 px-4"
-            : "border-transparent px-2",
+            ? "border-button/20 bg-button/15 px-4 pt-5"
+            : "border-zinc-700/50 bg-zinc-800/50 p-4",
           isEditing && "w-full"
         )}
       >
@@ -192,14 +197,25 @@ export function ChatMessage({
               </div>
             ) : (
               <div className="prose prose-invert max-w-none text-white/80">
-                {content.startsWith("data:image") ? (
-                  <div className="relative w-full aspect-video">
-                    <img
-                      src={`${content}`}
-                      alt="Generated content"
-                      className="object-contain rounded-lg"
-                    />
-                  </div>
+                {isImageMessage ? (
+                  content ? (
+                    <div className="aspect-square w-full h-[400px] overflow-hidden">
+                      <img
+                        src={content}
+                        alt="Generated content"
+                        loading="lazy"
+                        className="object-cover rounded-lg w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full h-[400px] bg-zinc-800/50 rounded-lg flex flex-col items-center justify-center space-y-4 p-6 text-center">
+                      <div className="size-10 border-3 border-button border-t-transparent rounded-full animate-spin" />
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium text-white">Generating your image</h3>
+                        <p className="text-sm text-zinc-400">This usually takes 10-20 seconds. Please hold on...</p>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}
@@ -362,7 +378,11 @@ export function ChatMessage({
                 </ReactMarkdown>
                 )}
                 {isStreaming && (
-                  <span className="inline-block w-2 h-6 bg-emerald-400 animate-pulse ml-1" />
+                  <div className="flex items-center space-x-1 h-6 ml-2">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
                 )}
               </div>
             )}

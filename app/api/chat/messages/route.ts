@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   // Format messages for frontend
   const formattedMessages = chatMessages.map((message) => {
     let parsedContent;
-    if (message.contentType === "text") {
+    if (message.contentType === "text" || message.contentType === "image") {
       parsedContent = message.content;
     } else {
       try {
