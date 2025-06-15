@@ -50,6 +50,13 @@
       "when": 1749913982657,
       "tag": "0006_white_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1749959771296,
+      "tag": "0007_lonely_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

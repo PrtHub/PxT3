@@ -13,6 +13,7 @@ interface ChatPageProps {
 }
 
 interface Message {
+  id: string;
   role: "user" | "assistant";
   content: string;
 }
@@ -48,6 +49,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     if (Array.isArray(data.messages)) {
       setMessages(
         data.messages.map((msg: any) => ({
+          id: msg.id,
           role: msg.role,
           content:
             Array.isArray(msg.content) && msg.content[0]?.text
@@ -75,7 +77,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       if (currentPartialResponse.trim()) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { role: "assistant", content: currentPartialResponse },
+          { 
+            id: crypto.randomUUID(),
+            role: "assistant", 
+            content: currentPartialResponse 
+          },
         ]);
 
         fetch("/api/chat/save-partial-message", {
@@ -98,10 +104,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const handleSendMessage = useCallback(
     async (userMessage: string, model: string) => {
       setLoading(true);
-      setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+      const userMessageId = crypto.randomUUID();
+      setMessages((prev) => [...prev, { 
+        id: userMessageId,
+        role: "user", 
+        content: userMessage 
+      }]);
       setStreamingResponse("");
       assistantContentRef.current = "";
-      latestUserMessageIdRef.current = null;
+      latestUserMessageIdRef.current = userMessageId;
       isStoppedRef.current = false;
 
       const controller = new AbortController();
@@ -143,7 +154,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             if (!isStoppedRef.current && assistantContentRef.current.trim()) {
               setMessages((prevMessages) => [
                 ...prevMessages,
-                { role: "assistant", content: assistantContentRef.current },
+                { 
+                  id: crypto.randomUUID(),
+                  role: "assistant", 
+                  content: assistantContentRef.current 
+                },
               ]);
             }
             setStreamingResponse("");
@@ -181,7 +196,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
                   const imageUrl = event.data;
                   setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: imageUrl },
+                    { 
+                      id: crypto.randomUUID(),
+                      role: "assistant", 
+                      content: imageUrl 
+                    },
                   ]);
                   assistantContentRef.current = "";
                   setStreamingResponse("");

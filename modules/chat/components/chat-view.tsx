@@ -14,6 +14,7 @@ import {
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
+  id: string;
 }
 
 interface ChatViewProps {
@@ -65,11 +66,12 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
             <ChatMessageLoading />
           ) : (
             <>
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <ChatMessage
-                  key={index}
+                  key={message.id}
                   role={message.role}
                   content={message.content}
+                  messageId={message.id}
                 />
               ))}
               {loading && (
@@ -77,6 +79,7 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
                   <ChatMessage
                     role="assistant"
                     content={streamingResponse}
+                    messageId="streaming"
                     isStreaming={true}
                   />
                   <div ref={messagesEndRef} />

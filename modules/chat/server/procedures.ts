@@ -27,6 +27,9 @@ export const ChatRouter = createTRPCRouter({
         title: chats.title,
         createdAt: chats.createdAt,
         updatedAt: chats.updatedAt,
+        parentChatId: chats.parentChatId,
+        branchedFromMessageId: chats.branchedFromMessageId,
+        branchName: chats.branchName,
       })
       .from(chats)
       .where(eq(chats.userId, userId))
@@ -63,6 +66,7 @@ export const ChatRouter = createTRPCRouter({
       return {
         title: existingChat.title,
         userId: existingChat.userId,
+        branchName: existingChat.branchName,
       };
     }),
 

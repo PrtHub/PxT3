@@ -11,8 +11,9 @@ import {
   CommandItem 
 } from "@/components/ui/command";
 import { useRouter } from "next/navigation";
-import { Loader2, MessageSquare } from "lucide-react";
+import { GitBranch, Loader2, MessageSquare } from "lucide-react";
 import { trpc } from "@/trpc/client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SearchCommandProps {
   open: boolean;
@@ -55,6 +56,14 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
     });
   };
 
+  const formatChatTitle = (chat: { title: string; branchName: string | null }) => {
+    if (chat.branchName) {
+      const cleanTitle = chat.title.replace(/^Branch from: /, '');
+      return cleanTitle;
+    }
+    return chat.title;
+  };
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} className="max-w-2xl">
       <div className="relative px-4 pt-4">
@@ -94,11 +103,27 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
                 className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 cursor-pointer"
               >
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent/50 text-muted-foreground">
-                  <MessageSquare className="h-4 w-4 text-button" />
+                  {chat.branchName ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className="flex items-center justify-center w-4 h-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <GitBranch className="h-4 w-4 text-button" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{chat.branchName}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <MessageSquare className="h-4 w-4 text-button" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="truncate font-medium text-foreground">
-                    {chat.title || "Untitled Chat"}
+                    {formatChatTitle(chat) || "Untitled Chat"}
                   </p>
                   <div className="flex items-center gap-2 mt-1 text-muted-foreground">
                     <span className="flex items-center gap-1">
