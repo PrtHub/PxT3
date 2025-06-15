@@ -46,7 +46,7 @@ export function WebSearchToggle({
         <TooltipTrigger asChild>
           <div className={cn(
             "cursor-pointer", 
-            !hasWebSearch && "opacity-50 cursor-not-allowed",
+            !hasWebSearch && "cursor-not-allowed",
             className
           )}>
             <Toggle
@@ -56,7 +56,7 @@ export function WebSearchToggle({
               disabled={!hasWebSearch}
               className={cn(
                 "data-[state=on]:bg-button/80 data-[state=on]:text-black hover:bg-transparent hover:text-button/80 h-7",
-                !hasWebSearch && "cursor-not-allowed"
+                !hasWebSearch && "opacity-30"
               )}
               asChild
             >

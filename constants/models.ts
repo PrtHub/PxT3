@@ -8,7 +8,7 @@ export const freeModels = {
       "architecture": {
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "tokenizer": "GPT"
+        "tokenizer": "gemini"
       },
       "top_provider": {
         "is_moderated": true
@@ -195,6 +195,34 @@ export const freeModels = {
       "hugging_face_id": "mistralai/Mistral-7B-Instruct-v0.2",
       "per_request_limits": {},
       "supported_parameters": ["temperature", "max_tokens", "top_p"]
+    },
+    {
+      "id": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "name": "Mistral Small 3.1",
+      "created": 1741818122,
+      "description": "Mistral Small 3.1 24B Instruct model",
+      "architecture": {
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],    
+        "tokenizer": "Mistral"
+      },
+      "top_provider": {
+        "is_moderated": true
+      },
+      "pricing": {
+        "prompt": "0.0000007",
+        "completion": "0.0000007",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "context_length": 96000,
+      "hugging_face_id": "mistralai/Mistral-3.1-24B-Instruct-v0.2",
+      "per_request_limits": {},
+      "supported_parameters": ["temperature", "max_tokens", "top_p", "tools", "tool_choice"]
     },
     {
       "id": "meta-llama/llama-4-scout:free",

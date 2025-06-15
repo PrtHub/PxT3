@@ -33,9 +33,6 @@ export function ModelList({
   onModelSelect,
   onApiKeyClick,
 }: ModelListProps) {
-  const selectedModelObj = Object.values(models)
-    .flat()
-    .find((model) => model.id === selectedModel);
 
   if (isLoading) {
     return (
@@ -99,7 +96,7 @@ export function ModelList({
                   )}
                 </div>
                 <div className="ml-auto">
-                 {!model.id.includes("image") && <ModelCapabilities model={selectedModelObj || model} />}
+                 {!model.id.includes("image") && <ModelCapabilities model={model} />}
                   {model.id.includes("image") &&
                     onApiKeyClick &&
                     !hasApiKey && (

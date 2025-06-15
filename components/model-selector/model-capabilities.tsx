@@ -7,27 +7,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-
 import { Eye, Globe, Brain, ImageIcon } from "lucide-react";
 
-const ModelCapabilities = ({ model }: { model: OpenRouterModel }) => {
+interface ModelCapabilitiesProps {
+  model: OpenRouterModel;
+}
+
+const ModelCapabilities = ({ model }: ModelCapabilitiesProps) => {
   const hasWebSearch = model.supported_parameters?.some(
-    (p: string) => typeof p === "string" && p.toLowerCase().includes("tools")
+    param => typeof param === 'string' && param.toLowerCase().includes('tools')
   );
 
-  const isReasoningModel =
-    model.name.toLowerCase().includes("reasoning") ||
-    (model.description?.toLowerCase().includes("reasoning") ?? false);
+  const isReasoningModel = 
+    model.name.toLowerCase().includes('reasoning') || 
+    (model.description?.toLowerCase().includes('reasoning') ?? false) || 
+    (model.supported_parameters?.includes('reasoning') ?? false);
 
   const canGenerateImages = model.architecture?.output_modalities?.some(
-    (m: string) => m.toLowerCase().includes("image")
+    modality => typeof modality === 'string' && modality.toLowerCase().includes('image')
   );
 
-  const capabilities: string[] = [];
-
-  if (model.architecture?.input_modalities) {
-    capabilities.push(`${model.architecture.input_modalities.join(", ")}`);
-  }
+  const inputModalities = model.architecture?.input_modalities?.join(", ") || 'text';
 
   return (
     <div className="flex items-center gap-1">
@@ -44,8 +44,8 @@ const ModelCapabilities = ({ model }: { model: OpenRouterModel }) => {
         <TooltipContent className="max-w-[300px] text-sm">
           <div className="space-y-1">
             <p className="text-xs">
-              Supports {capabilities.length > 1 ? "only " : ""}{" "}
-              {capabilities.join(", ")} and analysis
+              Supports {inputModalities} {model.architecture?.output_modalities?.includes('image') ? 'input' : ''}
+              {model.architecture?.output_modalities?.includes('image') ? ' and image generation' : ' and analysis'}
             </p>
           </div>
         </TooltipContent>

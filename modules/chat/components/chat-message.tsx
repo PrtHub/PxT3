@@ -11,13 +11,26 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import CodeBlock from "@/components/code-block";
 import { useRouter, usePathname } from "next/navigation";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Image, ImageKitProvider } from "@imagekit/next";
+import { trpc } from "@/trpc/client";
+
+interface Attachment {
+  id: string;
+  url: string;
+  name: string;
+}
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
   content: string;
   messageId: string;
   isStreaming?: boolean;
+  attachments?: Attachment[];
 }
 
 export function ChatMessage({
@@ -25,6 +38,7 @@ export function ChatMessage({
   content,
   messageId,
   isStreaming = false,
+  attachments = [],
 }: ChatMessageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,6 +47,15 @@ export function ChatMessage({
   const [editedContent, setEditedContent] = useState(content);
   const [isCopied, setIsCopied] = useState(false);
   const [isBranched, setIsBranched] = useState(false);
+
+  const { data: allAttachments } = trpc.chat.getAttachments.useQuery(
+    {
+      messageId,
+    },
+    {
+      enabled: !!messageId,
+    }
+  );
 
   const handleBranch = async () => {
     try {
@@ -114,7 +137,6 @@ export function ChatMessage({
             ? "border-button/20 bg-button/15 px-4 pt-5"
             : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
           content.length === 0 && "w-fit px-4 py-2",
-
           isEditing && "w-full"
         )}
       >
@@ -150,6 +172,63 @@ export function ChatMessage({
               </div>
             ) : (
               <div className="prose prose-invert max-w-none text-white/80">
+                {role === "user" && attachments?.length > 0 ? (
+                  <div
+                    className={cn(
+                      "flex flex-wrap gap-2 mb-0",
+                      attachments?.length > 0 && "mb-4"
+                    )}
+                  >
+                    {attachments?.map((attachment) => (
+                      <div
+                        key={attachment.url}
+                        className="relative group rounded-lg overflow-hidden border border-white/10"
+                      >
+                        <ImageKitProvider
+                          urlEndpoint={
+                            process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+                          }
+                        >
+                          <Image
+                            src={attachment.url}
+                            alt={attachment.name}
+                            width={200}
+                            height={200}
+                            className="object-cover rounded-md"
+                          />
+                        </ImageKitProvider>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "flex flex-wrap gap-2",
+                      allAttachments && allAttachments?.length > 0 && "mb-4"
+                    )}
+                  >
+                    {allAttachments?.map((attachment) => (
+                      <div
+                        key={attachment.url}
+                        className="relative group rounded-lg overflow-hidden border border-white/10"
+                      >
+                        <ImageKitProvider
+                          urlEndpoint={
+                            process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+                          }
+                        >
+                          <Image
+                            src={attachment.url}
+                            alt={attachment.name}
+                            width={300}
+                            height={200}
+                            className="object-cover rounded-md"
+                          />
+                        </ImageKitProvider>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {isImageMessage ? (
                   content ? (
                     <div className="aspect-square w-full h-[400px] pb-4 overflow-hidden">
@@ -363,46 +442,50 @@ export function ChatMessage({
         {!isUser && !isEditing && (
           <>
             <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                >
-                  {isCopied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5 mr-0.5" />
-                    </>
-                  )}
-                </Button>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 mr-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{isCopied ? "Copied" : "Copy"}</p>
               </TooltipContent>
             </Tooltip>
             <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBranch}
-                  className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                >
-                  {isBranched ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
-                    </>
-                  ) : (
-                    <>
-                      <GitBranch className="h-3.5 w-3.5 mr-0.5" />
-                    </>
-                  )}
-                </Button>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBranch}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    {isBranched ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="h-3.5 w-3.5 mr-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Branch off</p>
@@ -412,44 +495,48 @@ export function ChatMessage({
         )}
         {isUser && !isEditing && (
           <>
-          <Tooltip>
-            <TooltipTrigger>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5 mr-0.5" />
-                </>
-              )}
-            </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isCopied ? "Copied" : "Copy"}</p>
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleEdit}
-              className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-            >
-              <Edit className="h-3.5 w-3.5 mr-0.5" />
-            </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Edit</p>
-            </TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 mr-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isCopied ? "Copied" : "Copy"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-0.5" />
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit</p>
+              </TooltipContent>
+            </Tooltip>
           </>
         )}
       </div>

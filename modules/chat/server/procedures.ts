@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import {  chats } from "@/db/schema";
+import { attachments, chats, messages } from "@/db/schema";
 import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, ilike } from "drizzle-orm";
@@ -196,6 +196,58 @@ export const ChatRouter = createTRPCRouter({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Failed to search chats",
+          });
+        }
+      }),
+      getAttachments: protectedProcedure
+      .input(
+        z.object({
+           messageId: z.string(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const { userId } = ctx;
+        const { messageId } = input;
+
+        try {
+          if (!userId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "User not authenticated"
+            });
+          }
+
+          const [message] = await db
+            .select({
+              id: messages.id,
+            })
+            .from(messages)
+            .where(eq(messages.id, messageId))
+            .limit(1);
+
+          if (!message) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Message not found",
+            });
+          }
+
+          const allAttachments = await db
+            .select({
+              id: attachments.id,
+              name: attachments.filename,
+              url: attachments.url,
+            })
+            .from(attachments)
+            .where(eq(attachments.messageId, message.id))
+            .limit(2);
+
+          return allAttachments;
+        } catch (error) {
+          console.error("Error getting attachments:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to get attachments",
           });
         }
       }),

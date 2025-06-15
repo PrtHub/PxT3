@@ -7,15 +7,23 @@ import { useSettingsStore } from "../store/settings-store";
 import { useInitialMessageStore } from "../store/initial-message-store";
 import { trpc } from "@/trpc/client";
 import ChatHeader from "./chat-header";
+import { useAttachmentsStore } from "../store/attachments-store";
 
 interface ChatPageProps {
   chatId: string;
+}
+
+interface Attachment {
+  id: string;
+  url: string;
+  name: string;
 }
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: Attachment[];
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
@@ -36,6 +44,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
 
   const utils = trpc.useUtils();
   const { selectedModel, openRouterApiKey, geminiApiKey } = useSettingsStore();
+  const { clearAttachments } = useAttachmentsStore();
 
   const handleWebSearchConfigChange = useCallback((config: { enabled: boolean }) => {
     setWebSearchConfig(prev => ({ ...prev, ...config }));
@@ -48,7 +57,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     const data = await res.json();
     if (Array.isArray(data.messages)) {
       setMessages(
-        data.messages.map((msg: any) => ({
+        data.messages.map((msg: Message) => ({
           id: msg.id,
           role: msg.role,
           content:
@@ -57,6 +66,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               : typeof msg.content === "string"
               ? msg.content
               : JSON.stringify(msg.content),
+          attachments: msg.attachments?.map((att: Attachment) => ({
+            id: att.id,
+            url: att.url,
+            name: att.name
+          })) || []
         }))
       );
     }
@@ -102,13 +116,14 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   }, [loading, initialChatId]);
 
   const handleSendMessage = useCallback(
-    async (userMessage: string, model: string) => {
+    async (userMessage: string, model: string, attachments?: Attachment[]) => {
       setLoading(true);
       const userMessageId = crypto.randomUUID();
       setMessages((prev) => [...prev, { 
         id: userMessageId,
         role: "user", 
-        content: userMessage 
+        content: userMessage ,
+        attachments: attachments || []
       }]);
       setStreamingResponse("");
       assistantContentRef.current = "";
@@ -128,6 +143,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             apiKey: openRouterApiKey,
             geminiApiKey: geminiApiKey,
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
+            attachments: attachments || [],
           }),
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -232,6 +248,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         setLoading(false);
         setStreamingResponse("");
         abortControllerRef.current = null;
+      } finally {
+        clearAttachments(initialChatId);
       }
     },
     [
@@ -241,6 +259,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       geminiApiKey,
       utils.chat.getChatsForUser,
       webSearchConfig,
+      clearAttachments,
     ]
   );
 

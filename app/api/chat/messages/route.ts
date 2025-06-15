@@ -1,8 +1,24 @@
 import { db } from "@/db";
-import { chats, messages } from "@/db/schema";
+import { chats, messages, attachments } from "@/db/schema";
 import { auth } from "@/auth";
-import { eq, asc } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+
+type MessageContent = string | Record<string, unknown>;
+
+interface MessageWithAttachments {
+  id: string;
+  role: string;
+  content: MessageContent;
+  contentType: string;
+  createdAt: Date;
+  parentId: string | null;
+  attachments: Array<{
+    id: string;
+    url: string;
+    name: string;
+  }>;
+}
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -41,7 +57,32 @@ export async function GET(req: NextRequest) {
     .where(eq(messages.chatId, chatId))
     .orderBy(asc(messages.createdAt));
 
-  const formattedMessages = chatMessages.map((message) => {
+  const messageIds = chatMessages.map(m => m.id);
+  const messageAttachments = messageIds.length > 0 ? await db
+    .select({
+      id: attachments.id,
+      messageId: attachments.messageId,
+      url: attachments.url,
+      name: attachments.filename,
+    })
+    .from(attachments)
+    .where(and(
+      eq(attachments.status, 'completed'),
+      messageIds.length > 0 ? 
+        eq(attachments.messageId, messageIds[0]) : 
+        eq(attachments.messageId, '')
+    ))
+    .orderBy(asc(attachments.createdAt)) : [];
+
+  const attachmentsByMessageId = messageAttachments.reduce<Record<string, typeof messageAttachments>>((acc, attachment) => {
+    if (!acc[attachment.messageId]) {
+      acc[attachment.messageId] = [];
+    }
+    acc[attachment.messageId].push(attachment);
+    return acc;
+  }, {});
+
+  const formattedMessages: MessageWithAttachments[] = chatMessages.map((message) => {
     let parsedContent;
     if (message.contentType === "text" || message.contentType === "image") {
       parsedContent = message.content;
@@ -52,14 +93,21 @@ export async function GET(req: NextRequest) {
         parsedContent = "[Error displaying content]";
       }
     }
+    
     return {
       id: message.id,
       role: message.role,
       content: parsedContent,
+      contentType: message.contentType,
       createdAt: message.createdAt,
       parentId: message.parentId,
+      attachments: attachmentsByMessageId[message.id]?.map(att => ({
+        id: att.id,
+        url: att.url,
+        name: att.name,
+      })) || [],
     };
   });
 
   return NextResponse.json({ messages: formattedMessages });
-} 
+}

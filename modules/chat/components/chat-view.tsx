@@ -11,10 +11,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface Attachment {
+  id: string;
+  url: string;
+  name: string;
+}
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   id: string;
+  attachments?: Attachment[];
 }
 
 interface ChatViewProps {
@@ -72,6 +79,7 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
                   role={message.role}
                   content={message.content}
                   messageId={message.id}
+                  attachments={message.attachments}
                 />
               ))}
               {loading && (
@@ -81,6 +89,7 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
                     content={streamingResponse}
                     messageId="streaming"
                     isStreaming={true}
+                    attachments={[]}
                   />
                   <div ref={messagesEndRef} />
                 </>

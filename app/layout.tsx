@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Silkscreen, Space_Grotesk, Sora } from "next/font/google";
 import { TRPCProvider } from "@/trpc/client";
 import { SessionProvider } from "@/modules/auth/provider/session-provider";
+import { Toaster } from "sonner";
 
 const silkscreen = Silkscreen({
   variable: "--font-silkscreen",
@@ -72,7 +73,10 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <SessionProvider>
-          <TRPCProvider>{children}</TRPCProvider>
+          <TRPCProvider>
+            {children}
+            <Toaster theme="dark"/>
+            </TRPCProvider>
         </SessionProvider>
       </body>
     </html>

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { auth } from "@/auth";
-import { chats, messages } from "@/db/schema";
+import { chats, messages, attachments } from "@/db/schema";
 import { getGeminiClient } from "@/lib/gemini";
 import { getOpenRouterClient } from "@/lib/open-router";
 import { imagekit } from "@/lib/image-kit";
@@ -29,6 +29,18 @@ const chatContentPartSchema = z.union([
   chatContentPartImageUrlSchema,
 ]);
 
+const attachmentSchema = z.object({
+  fileId: z.string(),
+  name: z.string(),
+  size: z.number(),
+  fileType: z.string(),
+  url: z.string().url(),
+  thumbnailUrl: z.string().url(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  filePath: z.string(),
+});
+
 const messageContentInputSchema = z.union([
   z.string().min(1, "Message content cannot be empty."),
   z
@@ -43,6 +55,7 @@ const sendMessageInputSchema = z.object({
   apiKey: z.string().optional().nullable(),
   geminiApiKey: z.string().optional().nullable(),
   parentMessageId: z.string().optional().nullable(),
+  attachments: z.array(attachmentSchema).optional().default([]),
   webSearch: z
     .object({
       enabled: z.boolean().default(false),
@@ -242,6 +255,25 @@ export async function POST(req: NextRequest) {
             content: userMessageContentForDb,
             parentId: input.parentMessageId,
           });
+
+          if (input.attachments && input.attachments.length > 0) {
+            await Promise.all(
+              input.attachments.map((attachment) =>
+                db.insert(attachments).values({
+                  id: crypto.randomUUID(),
+                  messageId: userMessageId as string,
+                  userId: userId,
+                  storageKey: attachment.fileId,
+                  url: attachment.url,
+                  filename: attachment.name,
+                  mimeType: attachment.fileType || "application/octet-stream",
+                  size: attachment.size,
+                  status: "completed",
+                })
+              )
+            );
+          }
+
           enqueue({
             event: "userMessageCreated",
             data: { userMessageId: userMessageId },
@@ -280,20 +312,28 @@ export async function POST(req: NextRequest) {
         }
 
         if (input.content) {
-          const userMessageContentType =
-            typeof input.content === "string" ? "text" : "parts";
-          const userMessageContentForDb =
-            typeof input.content === "string"
-              ? input.content
-              : JSON.stringify(input.content);
+          const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+            {
+              type: "text",
+              text: typeof input.content === "string" ? input.content : JSON.stringify(input.content)
+            }
+          ];
+
+          if (input.attachments && input.attachments.length > 0) {
+            input.attachments.forEach(attachment => {
+              messageContent.push({
+                type: "image_url",
+                image_url: {
+                  url: attachment.url,
+                  detail: "auto"
+                }
+              });
+            });
+          }
 
           const userMessageForLlm = {
             role: "user" as const,
-            content: (userMessageContentType === "text"
-              ? userMessageContentForDb
-              : JSON.parse(userMessageContentForDb)) as
-              | string
-              | OpenAI.Chat.Completions.ChatCompletionContentPart[],
+            content: messageContent
           };
           formattedMessagesForLlm.push(userMessageForLlm);
         }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Paperclip, ArrowUp, Loader2, StopCircle } from "lucide-react";
+import { ArrowUp, Loader2, StopCircle, X } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,11 +12,13 @@ import {
 import { useSettingsStore } from "../store/settings-store";
 import { ModelSelector } from "@/components/model-selector/model-selector";
 import { WebSearchToggle } from "@/components/web-search-toggle";
-import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import FileUploadComponent from "@/components/file-upload";
+import { Image, ImageKitProvider } from "@imagekit/next";
+import { useAttachmentsStore } from "../store/attachments-store";
 
 interface ChatInputBoxProps {
-  onSend?: (message: string, model: string) => void;
+  onSend?: (message: string, model: string, attachments?: any[]) => void;
   onStop?: () => void;
   loading?: boolean;
   webSearchConfig?: {
@@ -35,7 +37,9 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   message: initialMessage,
 }) => {
   const path = usePathname();
-
+  const chatId = path.split("/")[2];
+  const { addAttachment, getAttachments, removeAttachment } =
+    useAttachmentsStore();
   const {
     selectedModel,
     setSelectedModel,
@@ -47,6 +51,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   } = useSettingsStore();
 
   const [inputValue, setInputValue] = useState(initialMessage || "");
+  const attachments = getAttachments(chatId);
 
   useEffect(() => {
     if (initialMessage !== undefined) {
@@ -59,7 +64,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       e.preventDefault();
       if (inputValue.trim() && !loading) {
         if (onSend) {
-          onSend(inputValue, selectedModel);
+          onSend(inputValue, selectedModel, attachments);
         }
         setInputValue("");
       }
@@ -72,16 +77,28 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       m.architecture?.input_modalities?.includes("image")
   );
 
-  const hasFileInput = availableModels?.some(
-    (m) =>
-      m.id === selectedModel &&
-      m.architecture?.input_modalities?.includes("file")
-  );
+  const handleUploadSuccess = (response: any) => {
+    addAttachment(chatId, {
+      fileId: response.fileId,
+      name: response.name,
+      size: response.size,
+      fileType: response.fileType,
+      url: response.url,
+      thumbnailUrl: response.thumbnailUrl,
+      width: response.width,
+      height: response.height,
+      filePath: response.filePath,
+    });
+  };
+
+  const handleUploadError = (error: unknown) => {
+    console.error("Upload error:", error);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
-    onSend?.(inputValue.trim(), selectedModel);
+    if (!inputValue.trim() && attachments.length === 0) return;
+    onSend?.(inputValue.trim(), selectedModel, attachments);
     setInputValue("");
   };
 
@@ -123,36 +140,57 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                 ) ?? false
               }
             />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  className={cn(
-                    "text-gray-300 bg-transparent hover:text-white hover:bg-gray-500/20 border border-zinc-700 h-7 p-1.5 cursor-pointer disabled:cursor-not-allowed",
-                    !hasImageInput && "opacity-50 cursor-not-allowed"
-                  )}
-                  // disabled={!hasImageInput || !hasFileInput}
-                >
-                  <Paperclip className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {hasImageInput ? (
-                  <p>Attach image</p>
-                ) : hasFileInput ? (
-                  <p>Attach file</p>
-                ) : (
-                  <p>File upload is not supported</p>
-                )}
-              </TooltipContent>
-            </Tooltip>
+            <FileUploadComponent
+              onUploadSuccess={handleUploadSuccess}
+              onUploadError={handleUploadError}
+              disabled={loading}
+              hasImageInput={hasImageInput}
+              currentAttachments={attachments.length}
+            />
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.fileId}
+                    className="flex items-center gap-2 rounded-md px-2 py-1"
+                  >
+                    <ImageKitProvider
+                      urlEndpoint={
+                        process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+                      }
+                    >
+                      <Image
+                        src={attachment.thumbnailUrl}
+                        width={30}
+                        height={20}
+                        alt={attachment.name}
+                        className="rounded"
+                      />
+                    </ImageKitProvider>
+                    <Button
+                      asChild
+                      variant={"ghost"}
+                      size="icon"
+                      onClick={() =>
+                        removeAttachment(chatId, attachment.fileId)
+                      }
+                      className="text-zinc-400 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             {!loading && (
               <Button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || loading}
+                disabled={
+                  (!inputValue.trim() && attachments.length === 0) || loading
+                }
                 size="icon"
                 className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
               >
@@ -163,20 +201,21 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                 )}
               </Button>
             )}
-            {path !== "/" && loading && (
+            {loading && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                  asChild
                     variant="default"
                     size="icon"
-                    className="h-8 w-8 rounded-md cursor-pointer bg-button/80 hover:bg-button/60"
+                    className=" rounded-md cursor-pointer bg-button/80 hover:bg-button/60 w-8 h-8"
                     onClick={() => {
                       if (onStop) {
                         onStop();
                       }
                     }}
                   >
-                    <StopCircle className="size-4 font-bold" />
+                    <StopCircle className="p-1.5"/>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
