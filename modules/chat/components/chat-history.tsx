@@ -12,9 +12,20 @@ import {
 import { trpc } from "@/trpc/client";
 import { usePathname } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GitBranch } from "lucide-react";
+import { GitBranch, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSession } from "next-auth/react";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChatHistoryProps {
   searchQuery?: string | null;
@@ -23,8 +34,22 @@ interface ChatHistoryProps {
 const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   const session = useSession();
   const path = usePathname();
+
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+  const [hoveredChat, setHoveredChat] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+
   const { data: chats, isLoading } = trpc.chat.getChatsForUser.useQuery({
     searchQuery,
+  });
+
+  const deleteChat = trpc.chat.deleteChat.useMutation({
+    onSuccess: () => {
+      utils.chat.getChatsForUser.invalidate();
+    },
+    onError: () => {
+      console.log("Failed to delete chat!");
+    }
   });
 
   const formatChatTitle = (chat: { title: string; branchName: string | null }) => {
@@ -33,6 +58,19 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
       return cleanTitle;
     }
     return chat.title;
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, chatId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setChatToDelete(chatId);
+  };
+
+  const confirmDelete = () => {
+    if (chatToDelete) {
+      deleteChat.mutate({ chatId: chatToDelete });
+      setChatToDelete(null);
+    }
   };
 
   if (!session.data?.user) {
@@ -59,14 +97,20 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   }
 
   return (
-    <SidebarGroup className="flex flex-col h-full px-4 py-2">
+    <>
+      <SidebarGroup className="flex flex-col h-full px-4 py-2">
       <p className="text-xs text-button/80 font-semibold mb-2 group-data-[collapsible=icon]:opacity-0 transition-all duration-500 ease-in-out">
         History
       </p>
       <SidebarGroupContent className="flex-1 overflow-y-auto">
         <SidebarMenu className="space-y-1 pb-52">
             {chats.map((chat) => (
-              <SidebarMenuItem key={chat.id}>
+              <SidebarMenuItem 
+                key={chat.id}
+                onMouseEnter={() => setHoveredChat(chat.id)}
+                onMouseLeave={() => setHoveredChat(null)}
+                className="group relative"
+              >
                 <Link 
                   href={`/chat/${chat.id}`}
                   prefetch={true}
@@ -84,7 +128,7 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
                     isActive={chat.id === path.split("/")[2]}
                     variant="outline"
                   >
-                    <div className="w-full flex items-center gap-2 pr-2 cursor-pointer">
+                    <div className="w-full flex items-center gap-2 pr-2">
                       {chat.branchName && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -103,12 +147,48 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
                       </span>
                     </div>
                   </SidebarMenuButton>
+                  <div 
+                    className={cn(
+                      "absolute inset-0 flex items-center justify-end pr-2 bg-gradient-to-l from-zinc-900/90 via-zinc-900/10 to-transparent pointer-events-none transition-opacity duration-200 rounded-md",
+                      hoveredChat === chat.id ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteClick(e, chat.id)}
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-300  hover:text-button hover:bg-zinc-700/80 cursor-pointer transition-colors duration-200 pointer-events-auto"
+                      aria-label="Delete chat"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      <AlertDialog open={!!chatToDelete} onOpenChange={(open) => !open && setChatToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Chat</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this chat? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-button hover:bg-button/80 cursor-pointer"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

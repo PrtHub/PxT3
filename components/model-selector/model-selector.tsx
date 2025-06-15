@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { fetchModels, OpenRouterModel } from "@/lib/api";
-import { toast } from "sonner";
 import { freeModels, imageModels } from "@/constants/models";
 import { useSettingsStore } from "@/modules/chat/store/settings-store";
 import { ModelList } from "./model-list";
@@ -142,7 +141,7 @@ export function ModelSelector({
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);
     onApiKeyChange(key);
-    toast.success("API Key saved!");
+    console.log("API Key saved!");
   };
 
   const handleRemoveApiKey = () => {
@@ -151,7 +150,7 @@ export function ModelSelector({
     if (defaultModels.length > 0) {
       onModelSelect(defaultModels[0].id);
     }
-    toast.success("API key removed");
+    console.log("API key removed");
   };
 
   const handleGeminiKeySave = (key: string) => {

@@ -10,7 +10,6 @@ import {
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, X } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useSession } from "next-auth/react";
@@ -83,7 +82,7 @@ const FileUploadComponent = ({
     if (file) {
       const error = validateFile(file);
       if (error) {
-        toast.error(error);
+        console.error(error);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -95,7 +94,7 @@ const FileUploadComponent = ({
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error("Please select a file first");
+      console.error("Please select a file first");
       return;
     }
 
@@ -121,7 +120,7 @@ const FileUploadComponent = ({
         abortSignal: abortController.signal,
       });
 
-      toast.success("File uploaded successfully");
+      console.log("File uploaded successfully");
       onUploadSuccess?.(uploadResponse);
       setSelectedFile(null);
       if (fileInputRef.current) {
@@ -131,13 +130,13 @@ const FileUploadComponent = ({
       console.error("Upload error:", error);
 
       if (error instanceof ImageKitAbortError) {
-        toast.error("Upload was cancelled");
+        console.error("Upload was cancelled");
       } else if (error instanceof ImageKitInvalidRequestError) {
-        toast.error("Invalid file or request");
+        console.error("Invalid file or request");
       } else if (error instanceof ImageKitUploadNetworkError) {
-        toast.error("Network error occurred");
+        console.error("Network error occurred");
       } else if (error instanceof ImageKitServerError) {
-        toast.error("Server error occurred");
+        console.error("Server error occurred");
       }
 
       onUploadError?.(error);

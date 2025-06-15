@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Children } from "react";
 import { Copy, Check} from "lucide-react";
-import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
@@ -29,10 +28,10 @@ const CodeBlock = ({ language, children }: CodeBlockProps) => {
           )?.join("") || "";
         await navigator.clipboard.writeText(text.trim());
         setIsCopied(true);
-        toast.success("Code copied to clipboard");
+        console.log("Code copied to clipboard");
       } catch (error) {
         console.error("Failed to copy text:", error);
-        toast.error("Failed to copy code");
+        console.log("Failed to copy code");
       }
     };
   

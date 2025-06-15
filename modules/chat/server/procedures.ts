@@ -251,5 +251,45 @@ export const ChatRouter = createTRPCRouter({
           });
         }
       }),
+      deleteChat: protectedProcedure
+      .input(
+        z.object({
+          chatId: z.string().uuid(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+          const { userId } = ctx;
+          const { chatId } = input;
 
+          const [existingChat] = await db
+            .select({
+              id: chats.id,
+              userId: chats.userId,
+            })
+            .from(chats)
+            .where(eq(chats.id, chatId))
+            .limit(1);
+
+          if (!existingChat) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Chat not found.",
+            });
+          }
+
+          if (existingChat.userId !== userId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "You are not authorized to delete this chat.",
+            });
+          }
+
+          await db
+            .delete(chats)
+            .where(eq(chats.id, chatId));
+
+          return {
+            success: true,
+          };
+      })
 });

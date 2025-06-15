@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from "react";
 import { Bot, Copy, Check, Edit, X, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { cn } from "@/lib/utils";
@@ -77,12 +76,12 @@ export function ChatMessage({
 
       const data = await response.json();
       setIsBranched(true);
-      toast.success("New branch created successfully");
+      console.log("New branch created successfully");
 
       router.push(`/chat/${data.newChatId}`);
     } catch (error) {
       console.error("Failed to create branch:", error);
-      toast.error("Failed to create branch");
+      console.log("Failed to create branch");
     }
   };
 
@@ -97,10 +96,10 @@ export function ChatMessage({
     try {
       await navigator.clipboard.writeText(content);
       setIsCopied(true);
-      toast.success("Message copied to clipboard");
+      console.log("Message copied to clipboard");
     } catch (error) {
       console.error("Failed to copy text:", error);
-      toast.error("Failed to copy message");
+      console.log("Failed to copy message");
     }
   };
 
@@ -110,7 +109,7 @@ export function ChatMessage({
 
   const handleSave = () => {
     setIsEditing(false);
-    toast.success("Message updated");
+    console.log("Message updated");
   };
 
   const handleCancel = () => {
