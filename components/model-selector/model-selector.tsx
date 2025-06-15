@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { useSettingsStore } from "@/modules/chat/store/settings-store";
 import { ModelList } from "./model-list";
 import getModelIcon from "./model-icons";
 import { ApiKeyDialog } from "@/components/api-key-dialog";
+import { useRouter } from "next/navigation";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -60,6 +62,8 @@ export function ModelSelector({
   geminiApiKey,
   onGeminiApiKeyChange,
 }: ModelSelectorProps) {
+  const session = useSession();
+  const router = useRouter();
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -201,6 +205,10 @@ export function ModelSelector({
 
   const handleApiKeyButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!session.data?.user) {
+      router.push("/auth");
+      return;
+    }
     setIsApiKeyDialogOpen(true);
   };
 
@@ -208,6 +216,7 @@ export function ModelSelector({
 
   return (
     <div className="relative">
+      {session.data?.user && (
       <ApiKeyDialog
         isOpen={isApiKeyDialogOpen}
         onOpenChange={setIsApiKeyDialogOpen}
@@ -218,6 +227,8 @@ export function ModelSelector({
         apiDocsUrl="https://openrouter.ai/keys"
         inputPlaceholder="sk-or-v1-..."
       />
+      )}
+      {session.data?.user && (
       <ApiKeyDialog
         isOpen={isGeminiDialogOpen}
         onOpenChange={(open) => {
@@ -232,6 +243,7 @@ export function ModelSelector({
         apiDocsUrl="https://aistudio.google.com/app/apikey"
         inputPlaceholder="AIzaSy..."
       />
+      )}
       <DropdownMenu onOpenChange={() => setIsOpen(true)}>
         <DropdownMenuTrigger asChild>
           <Button

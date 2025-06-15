@@ -58,7 +58,7 @@ const SidebarFooterSection = () => {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <Link href={`/profile/${user?.id}`} className="flex items-center gap-3">
       <Avatar className="h-8 w-8 group-data-[collapsible=icon]:opacity-0 transition-opacity duration-500 ease-in-out">
         {imageSrc && !imageError ? (
           <div className="relative h-full w-full">
@@ -87,7 +87,7 @@ const SidebarFooterSection = () => {
           {user?.email?.split("@")[0] || "Free"}
         </p>
       </div>
-    </div>
+    </Link>
   );
 };
 

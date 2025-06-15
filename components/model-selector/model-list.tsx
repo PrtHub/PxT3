@@ -7,6 +7,8 @@ import { DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import ModelCapabilities from "./model-capabilities";
 import { JSX } from "react";
 import { Button } from "../ui/button";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface ModelListProps {
   title: string;
@@ -33,6 +35,8 @@ export function ModelList({
   onModelSelect,
   onApiKeyClick,
 }: ModelListProps) {
+  const session = useSession();
+  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -105,6 +109,10 @@ export function ModelList({
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!session.data?.user) {
+                            router.push("/auth");
+                            return;
+                          }
                           onApiKeyClick();
                         }}
                         className="cursor-pointer"

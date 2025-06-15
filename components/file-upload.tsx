@@ -13,6 +13,7 @@ import { Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { useSession } from "next-auth/react";
 
 const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -33,6 +34,8 @@ const FileUploadComponent = ({
   hasImageInput,
   currentAttachments = 0,
 }: FileUploadProps) => {
+  const session = useSession();
+
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -167,16 +170,16 @@ const FileUploadComponent = ({
           <TooltipTrigger asChild>
             <span className={cn(
             "cursor-pointer", 
-            !hasImageInput && "cursor-not-allowed"
+            !hasImageInput || session.status !== "authenticated" && "cursor-not-allowed"
           )}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || uploading || !hasImageInput}
+                disabled={disabled || uploading || !hasImageInput || session.status !== "authenticated"}
                 className={cn(
                   "h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer",
-                  !hasImageInput && "opacity-70 cursor-not-allowed"
+                  !hasImageInput || session.status !== "authenticated" && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {uploading ? (

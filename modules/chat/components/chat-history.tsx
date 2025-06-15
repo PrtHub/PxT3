@@ -14,12 +14,14 @@ import { usePathname } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GitBranch } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSession } from "next-auth/react";
 
 interface ChatHistoryProps {
   searchQuery?: string | null;
 }
 
 const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
+  const session = useSession();
   const path = usePathname();
   const { data: chats, isLoading } = trpc.chat.getChatsForUser.useQuery({
     searchQuery,
@@ -32,6 +34,10 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
     }
     return chat.title;
   };
+
+  if (!session.data?.user) {
+    return null;
+  }
 
   if (isLoading) {
     return (

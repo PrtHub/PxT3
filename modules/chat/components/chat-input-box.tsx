@@ -12,10 +12,11 @@ import {
 import { useSettingsStore } from "../store/settings-store";
 import { ModelSelector } from "@/components/model-selector/model-selector";
 import { WebSearchToggle } from "@/components/web-search-toggle";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import FileUploadComponent from "@/components/file-upload";
 import { Image, ImageKitProvider } from "@imagekit/next";
 import { useAttachmentsStore } from "../store/attachments-store";
+import { useSession } from "next-auth/react";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string, attachments?: any[]) => void;
@@ -36,6 +37,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   webSearchConfig = { enabled: false },
   message: initialMessage,
 }) => {
+  const router = useRouter();
   const path = usePathname();
   const chatId = path.split("/")[2];
   const { addAttachment, getAttachments, removeAttachment } =
@@ -49,6 +51,8 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     setGeminiApiKey,
     geminiApiKey,
   } = useSettingsStore();
+
+  const session = useSession();
 
   const [inputValue, setInputValue] = useState(initialMessage || "");
   const attachments = getAttachments(chatId);
@@ -97,6 +101,10 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session.data?.user) {
+      router.push("/auth");
+      return;
+    }
     if (!inputValue.trim() && attachments.length === 0) return;
     onSend?.(inputValue.trim(), selectedModel, attachments);
     setInputValue("");
