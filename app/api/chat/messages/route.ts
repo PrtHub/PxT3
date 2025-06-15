@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Missing chatId", { status: 400 });
   }
 
-  // Check chat ownership
   const [chat] = await db
     .select({ id: chats.id, userId: chats.userId })
     .from(chats)
@@ -29,7 +28,6 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Unauthorized", { status: 403 });
   }
 
-  // Fetch messages
   const chatMessages = await db
     .select({
       id: messages.id,
@@ -43,7 +41,6 @@ export async function GET(req: NextRequest) {
     .where(eq(messages.chatId, chatId))
     .orderBy(asc(messages.createdAt));
 
-  // Format messages for frontend
   const formattedMessages = chatMessages.map((message) => {
     let parsedContent;
     if (message.contentType === "text" || message.contentType === "image") {

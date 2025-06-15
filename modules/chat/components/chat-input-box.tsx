@@ -34,7 +34,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   webSearchConfig = { enabled: false },
   message: initialMessage,
 }) => {
- const path = usePathname();
+  const path = usePathname();
 
   const {
     selectedModel,
@@ -149,31 +149,40 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              onClick={handleSubmit}
-              disabled={!inputValue.trim() || loading}
-              size="icon"
-              className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
-            >
-              {loading ? (
-                <Loader2 className="size-4 animate-spin text-black" />
-              ) : (
-                <ArrowUp className="size-4" />
-              )}
-            </Button>
-            {path !== "/" && loading && (
+            {!loading && (
               <Button
-                variant="outline"
+                onClick={handleSubmit}
+                disabled={!inputValue.trim() || loading}
                 size="icon"
-                className="h-8 w-8 rounded-md cursor-pointer"
-                onClick={() => {
-                  if (onStop) {
-                    onStop();
-                  }
-                }}
+                className="bg-button hover:bg-button/90 disabled:bg-button/50 disabled:opacity-50 h-8 w-8 rounded-md cursor-pointer"
               >
-                <StopCircle className="size-4" />
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin text-black" />
+                ) : (
+                  <ArrowUp className="size-4" />
+                )}
               </Button>
+            )}
+            {path !== "/" && loading && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-8 w-8 rounded-md cursor-pointer bg-button/80 hover:bg-button/60"
+                    onClick={() => {
+                      if (onStop) {
+                        onStop();
+                      }
+                    }}
+                  >
+                    <StopCircle className="size-4 font-bold" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Stop </p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>

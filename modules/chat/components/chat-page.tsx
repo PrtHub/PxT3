@@ -27,6 +27,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const assistantContentRef = useRef<string>("");
   const latestUserMessageIdRef = useRef<string | null>(null);
+  const isStoppedRef = useRef(false);
 
   const [webSearchConfig, setWebSearchConfig] = useState({
     enabled: false,
@@ -63,6 +64,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     if (loading && abortControllerRef.current) {
       const currentPartialResponse = assistantContentRef.current;
 
+      isStoppedRef.current = true;
+      
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
 
@@ -74,9 +77,23 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
           ...prevMessages,
           { role: "assistant", content: currentPartialResponse },
         ]);
+
+        fetch("/api/chat/save-partial-message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chatId: initialChatId,
+            content: currentPartialResponse,
+            parentMessageId: latestUserMessageIdRef.current,
+          }),
+        }).catch(error => {
+          console.error("Failed to save partial message:", error);
+        });
       }
     }
-  }, [loading, setMessages, setStreamingResponse, setLoading]);
+  }, [loading, initialChatId]);
 
   const handleSendMessage = useCallback(
     async (userMessage: string, model: string) => {
@@ -85,6 +102,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       setStreamingResponse("");
       assistantContentRef.current = "";
       latestUserMessageIdRef.current = null;
+      isStoppedRef.current = false;
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -116,9 +134,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         let buffer = "";
 
         const processStream = async () => {
+          if (isStoppedRef.current) {
+            return;
+          }
+
           const { value, done } = await reader.read();
           if (done) {
-            if (assistantContentRef.current.trim()) {
+            if (!isStoppedRef.current && assistantContentRef.current.trim()) {
               setMessages((prevMessages) => [
                 ...prevMessages,
                 { role: "assistant", content: assistantContentRef.current },
@@ -135,28 +157,35 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
           buffer += decoder.decode(value, { stream: true });
           let eventEndIndex;
           while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
+            if (isStoppedRef.current) {
+              return;
+            }
+
             const eventString = buffer
               .slice(0, eventEndIndex)
               .replace(/^data: /, "");
             buffer = buffer.slice(eventEndIndex + 2);
+            
             try {
               const event = JSON.parse(eventString);
               if (event.event === "userMessageCreated") {
                 latestUserMessageIdRef.current = event.data.userMessageId;
               } else if (event.event === "chunk") {
                 const content = event.data.content;
-                if (content) {
+                if (content && !isStoppedRef.current) {
                   assistantContentRef.current += content;
                   setStreamingResponse(assistantContentRef.current);
                 }
               } else if (event.event === "image_generated") {
-                const imageUrl = event.data;
-                setMessages((prev) => [
-                  ...prev,
-                  { role: "assistant", content: imageUrl },
-                ]);
-                assistantContentRef.current = "";
-                setStreamingResponse("");
+                if (!isStoppedRef.current) {
+                  const imageUrl = event.data;
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: imageUrl },
+                  ]);
+                  assistantContentRef.current = "";
+                  setStreamingResponse("");
+                }
               } else if (event.event === "end") {
                 utils.chat.getChatsForUser.invalidate();
               }
@@ -164,7 +193,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               console.error("Failed to parse stream event:", eventString, err);
             }
           }
-          await processStream();
+          
+          if (!isStoppedRef.current) {
+            await processStream();
+          }
         };
 
         await processStream();
@@ -174,17 +206,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             console.log(
               "[ChatPage] Fetch aborted (likely by user or unmount)."
             );
-            if (
-              assistantContentRef.current.trim() &&
-              !messages.some(
-                (msg) => msg.content === assistantContentRef.current
-              )
-            ) {
-              setMessages((prevMessages) => [
-                ...prevMessages,
-                { role: "assistant", content: assistantContentRef.current },
-              ]);
-            }
           } else {
             console.error("Fetch error:", err);
           }
@@ -199,11 +220,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       selectedModel,
       openRouterApiKey,
       geminiApiKey,
-      setMessages,
-      setLoading,
-      setStreamingResponse,
       utils.chat.getChatsForUser,
-      messages,
       webSearchConfig,
     ]
   );
