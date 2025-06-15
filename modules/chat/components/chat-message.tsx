@@ -121,10 +121,13 @@ export function ChatMessage({
     content.startsWith("data:image") ||
     content.startsWith("https://ik.imagekit.io/");
 
+    // const isFirefox = navigator.userAgent.includes('Firefox');
+const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
+
   return (
     <div
       className={cn(
-        "group w-full flex flex-col px-4",
+        "group w-full flex flex-col px-4 max-w-3xl",
         isUser ? "items-end" : "items-start",
         isUser && "mt-20 mb-10"
       )}
@@ -135,6 +138,7 @@ export function ChatMessage({
           isUser
             ? "border-button/20 bg-button/15 px-4 pt-5"
             : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
+            isChrome && "ml-2",
           content.length === 0 && "w-fit px-4 py-2",
           isEditing && "w-full"
         )}
