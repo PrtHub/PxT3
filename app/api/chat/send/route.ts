@@ -280,36 +280,20 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-          [];
-        let currentMessageIdForHistory = input.parentMessageId;
-        while (currentMessageIdForHistory) {
-          const [messageNode] = await db
-            .select({
-              role: messages.role,
-              content: messages.content,
-              contentType: messages.contentType,
-              parentId: messages.parentId,
-            })
-            .from(messages)
-            .where(eq(messages.id, currentMessageIdForHistory))
-            .limit(1);
+        const chatMessages = await db
+          .select({
+            role: messages.role,
+            content: messages.content,
+            contentType: messages.contentType,
+          })
+          .from(messages)
+          .where(eq(messages.chatId, currentChatId))
+          .orderBy(messages.createdAt);
 
-          if (!messageNode) break;
-
-          console.log(
-            `[API] Formatted ${formattedMessagesForLlm.length} messages for the LLM.`
-          );
-
-          formattedMessagesForLlm.unshift({
-            role: messageNode.role as "user" | "assistant",
-            content:
-              messageNode.contentType === "parts"
-                ? JSON.parse(messageNode.content)
-                : messageNode.content,
-          });
-          currentMessageIdForHistory = messageNode.parentId;
-        }
+        const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = chatMessages.map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.contentType === "parts" ? JSON.parse(msg.content) : msg.content,
+        }));
 
         if (input.content) {
           const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
