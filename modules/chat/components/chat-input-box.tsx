@@ -28,6 +28,7 @@ interface ChatInputBoxProps {
     onConfigChange?: (config: { enabled: boolean }) => void;
   };
   message?: string | null;
+  attachments?: any[];
 }
 
 const ChatInputBox: React.FC<ChatInputBoxProps> = ({
@@ -36,10 +37,11 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   loading,
   webSearchConfig = { enabled: false },
   message: initialMessage,
+  attachments: initialAttachments,
 }) => {
   const router = useRouter();
   const path = usePathname();
-  const chatId = path.split("/")[2];
+  const chatId = path === '/' ? 'new-chat' : path.split("/")[2];
   const { addAttachment, getAttachments, removeAttachment } =
     useAttachmentsStore();
   const {
@@ -55,7 +57,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   const session = useSession();
 
   const [inputValue, setInputValue] = useState(initialMessage || "");
-  const attachments = getAttachments(chatId);
+  const attachments = initialAttachments || getAttachments(chatId);
 
   useEffect(() => {
     if (initialMessage !== undefined) {

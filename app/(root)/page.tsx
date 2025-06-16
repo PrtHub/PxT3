@@ -5,15 +5,17 @@ import Introduction from '@/modules/home/section/Introduction';
 import ChatInputBox from '@/modules/chat/components/chat-input-box';
 import { useRouter } from 'next/navigation';
 import { useInitialMessageStore } from '@/modules/chat/store/initial-message-store';
+import { useAttachmentsStore } from '@/modules/chat/store/attachments-store';
 
 const Homepage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
-  
   const {message} = useInitialMessageStore()
 
-  console.log("message", message)
+  const { attachments } = useAttachmentsStore();
+
+  console.log("Attachments FROM HOME", attachments)
 
   const handleSendMessage = async (userMessage: string) => {
     setLoading(true);
@@ -42,7 +44,7 @@ const Homepage = () => {
   return (  
     <main className='w-full min-h-screen overflow-y-hidden'>
       <Introduction />
-      <ChatInputBox onSend={handleSendMessage} message={message} loading={loading} />
+      <ChatInputBox onSend={handleSendMessage} message={message} loading={loading} attachments={attachments['new-chat']}/>
     </main>
   );
 };

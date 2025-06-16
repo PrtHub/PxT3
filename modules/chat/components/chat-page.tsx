@@ -45,7 +45,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
 
   const utils = trpc.useUtils();
   const { selectedModel, openRouterApiKey, geminiApiKey } = useSettingsStore();
-  const { clearAttachments } = useAttachmentsStore();
+  const { clearAttachments, attachments: initialAttachments } = useAttachmentsStore();
 
   const handleWebSearchConfigChange = useCallback((config: { enabled: boolean }) => {
     setWebSearchConfig(prev => ({ ...prev, ...config }));
@@ -144,7 +144,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             apiKey: openRouterApiKey,
             geminiApiKey: geminiApiKey,
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
-            attachments: attachments || [],
+            attachments: attachments || initialAttachments['new-chat'] || [],
           }),
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
