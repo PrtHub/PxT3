@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronDown, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,7 +74,8 @@ export function ModelSelector({
 
   const { setAvailableModels, availableModels } = useSettingsStore();
 
-  const defaultModels: OpenRouterModel[] = freeModels.data.map((model) => ({
+  const defaultModels = useMemo(() => {
+    return freeModels.data.map((model) => ({
     ...model,
     description: model.description || "Free model",
     pricing: model.pricing || {
@@ -91,8 +92,10 @@ export function ModelSelector({
     top_provider: model.top_provider || { is_moderated: true },
     per_request_limits: model.per_request_limits || {},
   }));
+}, []);
 
-  const imageModel: OpenRouterModel[] = imageModels.data.map((model) => ({
+  const imageModel = useMemo(() => {
+    return imageModels.data.map((model) => ({
     ...model,
     description: model.description || "Free model",
     pricing: model.pricing || {
@@ -109,6 +112,7 @@ export function ModelSelector({
     top_provider: model.top_provider || { is_moderated: true },
     per_request_limits: model.per_request_limits || {},
   }));
+}, []);
 
   useEffect(() => {
     if (!currentApiKey) {
@@ -216,8 +220,6 @@ export function ModelSelector({
     }
     setIsApiKeyDialogOpen(true);
   };
-
-  console.log("Selected model: ", selectedModelObj);
 
   return (
     <div className="relative">

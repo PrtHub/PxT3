@@ -45,6 +45,7 @@ interface ChatMessageProps {
   messageId: string;
   isStreaming?: boolean;
   attachments?: Attachment[];
+  onUpdateMessage?: (messageId: string, newContent: string) => void;
 }
 
 export function ChatMessage({
@@ -53,12 +54,13 @@ export function ChatMessage({
   messageId,
   isStreaming = false,
   attachments = [],
+  onUpdateMessage,
 }: ChatMessageProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isUser = role === "user";
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(content);
+  const [editedContent, setEditedContent] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const [isBranched, setIsBranched] = useState(false);
   const [isReading, setIsReading] = useState(false);
@@ -120,16 +122,19 @@ export function ChatMessage({
   };
 
   const handleEdit = () => {
+    setEditedContent(content);
     setIsEditing(true);
   };
 
   const handleSave = () => {
+    if (onUpdateMessage) {
+      onUpdateMessage(messageId, editedContent);
+    }
     setIsEditing(false);
-    console.log("Message updated");
+    console.log("Message update requested");
   };
 
   const handleCancel = () => {
-    setEditedContent(content);
     setIsEditing(false);
   };
 
@@ -163,6 +168,8 @@ export function ChatMessage({
     }
   };
 
+  // const displayContent = isEditing ? editedContent : content;
+
   return (
     <div
       className={cn(
@@ -187,8 +194,8 @@ export function ChatMessage({
             {isEditing ? (
               <div className="flex flex-col gap-2 w-full px-2">
                 <Textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
+                   value={editedContent} 
+                   onChange={(e) => setEditedContent(e.target.value)}
                   className="w-full min-h-[100px] p-2 text-white/90 focus:outline-none border-none outline-none ring-0 focus:ring-0 focus:ring-offset-0 focus:border-none focus:ring-transparent focus:ring-offset-transparent rounded-md"
                   autoFocus
                 />

@@ -263,10 +263,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       selectedModel,
       openRouterApiKey,
       geminiApiKey,
-      utils.chat.getChatsForUser,
       webSearchConfig,
       clearAttachments,
-      initialAttachments,
+      initialAttachments
     ]
   );
 

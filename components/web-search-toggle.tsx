@@ -4,7 +4,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Globe } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface WebSearchToggleProps {
   enabled: boolean;
@@ -20,24 +20,10 @@ export function WebSearchToggle({
   hasWebSearch = false 
 }: WebSearchToggleProps) {
   const [open, setOpen] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(enabled);
-
-  useEffect(() => {
-    setIsEnabled(enabled);
-  }, [enabled]);
 
   const handleToggle = (pressed: boolean) => {
-    console.log('Toggle pressed:', pressed);
-    console.log('Current enabled prop:', enabled);
-    
-    setIsEnabled(pressed);
-    if (onToggle) {
-      console.log('Calling onToggle with:', pressed);
-      onToggle(pressed);
-    } else {
-      console.warn('onToggle is not defined');
-    }
-    setOpen(false);
+    onToggle(pressed);
+    setOpen(false); 
   };
 
   return (
@@ -51,7 +37,7 @@ export function WebSearchToggle({
           )}>
             <Toggle
               id="web-search"
-              pressed={isEnabled}
+              pressed={enabled}
               onPressedChange={handleToggle}
               disabled={!hasWebSearch}
               className={cn(
@@ -68,7 +54,7 @@ export function WebSearchToggle({
         </TooltipTrigger>
         <TooltipContent side="top">
           {hasWebSearch ? (
-            <p>{isEnabled ? "Disable" : "Enable"} web search</p>
+            <p>{enabled ? "Disable" : "Enable"} web search</p>
           ) : (
             <p>Web search not supported</p>
           )}

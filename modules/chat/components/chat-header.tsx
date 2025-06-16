@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Share2, Edit as EditIcon, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,7 +114,7 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
   };
 
   return (
-    <>
+    <Suspense fallback={<div>Loading...</div>}>
       <div className="absolute top-0 left-0 right-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="max-w-3xl mx-auto w-full py-3 px-4 flex items-center justify-between">
           <div className="flex-1 min-w-0 flex items-center group">
@@ -206,7 +206,7 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
         handleSave={handleSave}
         disabled={editChatTitle.isPending}
       />
-    </>
+    </Suspense>
   );
 };
 
