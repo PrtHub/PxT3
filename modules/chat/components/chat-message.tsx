@@ -2,7 +2,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bot, Copy, Check, Edit, X, GitBranch } from "lucide-react";
+import {
+  Bot,
+  Copy,
+  Check,
+  Edit,
+  X,
+  GitBranch,
+  Volume2Icon,
+  VolumeXIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -18,6 +27,11 @@ import {
 } from "@/components/ui/tooltip";
 import { Image, ImageKitProvider } from "@imagekit/next";
 import { trpc } from "@/trpc/client";
+import {
+  speakText,
+  cancelSpeech,
+  isSpeechSynthesisSupported,
+} from "@/lib/speech-synthesis";
 
 interface Attachment {
   id: string;
@@ -47,6 +61,7 @@ export function ChatMessage({
   const [editedContent, setEditedContent] = useState(content);
   const [isCopied, setIsCopied] = useState(false);
   const [isBranched, setIsBranched] = useState(false);
+  const [isReading, setIsReading] = useState(false);
 
   const { data: allAttachments } = trpc.chat.getAttachments.useQuery(
     {
@@ -122,10 +137,31 @@ export function ChatMessage({
     content.startsWith("data:image") ||
     content.startsWith("https://ik.imagekit.io/");
 
-const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
+  const isChrome =
+    /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
 
+  const cleanedContent = content.replace(/^[ \t]+/gm, "");
 
-  const cleanedContent = content.replace(/^[ \t]+/gm, '');
+  const handleReadAloud = () => {
+    if (!isSpeechSynthesisSupported()) return;
+    if (isReading) {
+      cancelSpeech();
+      setIsReading(false);
+    } else {
+      setIsReading(true);
+      speakText(content, {
+        rate: 1.0,
+        pitch: 1.0,
+        lang: "en-US",
+        onend: () => {
+          setIsReading(false);
+        },
+        onerror: () => {
+          setIsReading(false);
+        },
+      });
+    }
+  };
 
   return (
     <div
@@ -141,7 +177,7 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
           isUser
             ? "border-button/20 bg-button/15 px-4 pt-5"
             : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
-            isChrome && "ml-2",
+          isChrome && "ml-2",
           content.length === 0 && "w-fit px-4 py-2",
           isEditing && "w-full"
         )}
@@ -319,7 +355,7 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
                           </th>
                         );
                       },
-                      
+
                       td({ children }) {
                         return (
                           <td className="border border-zinc-800 px-4 py-2 text-zinc-300">
@@ -497,6 +533,31 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
               </TooltipTrigger>
               <TooltipContent>
                 <p>Branch off</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReadAloud}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    {isReading ? (
+                      <>
+                        <VolumeXIcon className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                      </>
+                    ) : (
+                      <>
+                        <Volume2Icon className="h-3.5 w-3.5 mr-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isReading ? "Stop" : "Read aloud"}</p>
               </TooltipContent>
             </Tooltip>
           </>
