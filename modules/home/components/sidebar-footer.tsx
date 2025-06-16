@@ -5,11 +5,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Image from "next/image";
 import { useState } from "react";
 import { User, LogIn } from "lucide-react";
+import { FaGithub } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SidebarFooterSection = () => {
   const { user, isLoading, isAuthenticated } = useUser();
@@ -22,6 +24,8 @@ const SidebarFooterSection = () => {
       setImageError(false);
     }
   }, [user?.image]);
+
+  const GITHUB_URL = "https://github.com/PrtHub/PxT3";
 
   if (isLoading) {
     return (
@@ -58,36 +62,54 @@ const SidebarFooterSection = () => {
   };
 
   return (
-    <Link href={`/profile/${user?.id}`} className="flex items-center gap-3">
-      <Avatar className="h-8 w-8 group-data-[collapsible=icon]:opacity-0 transition-opacity duration-500 ease-in-out">
-        {imageSrc && !imageError ? (
-          <div className="relative h-full w-full">
-            <Image
-              src={imageSrc}
-              alt={user?.name || "User"}
-              fill
-              className="object-cover"
-              onError={handleImageError}
-              unoptimized={imageSrc.includes('googleusercontent.com')}
-              referrerPolicy="no-referrer"
-              priority
-            />
-          </div>
-        ) : (
-          <AvatarFallback className="bg-zinc-800">
-            <User className="h-4 w-4 text-zinc-400" />
-          </AvatarFallback>
-        )}
-      </Avatar>
-      <div className="group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hidden transition-opacity duration-500 ease-in-out">
-        <p className="text-sm font-medium whitespace-nowrap">
-          {user?.name || "User"}
-        </p>
-        <p className="text-xs text-gray-400 whitespace-nowrap">
-          {user?.email?.split("@")[0] || "Free"}
-        </p>
-      </div>
-    </Link>
+    <div className="flex items-center gap-3 w-full">
+      <Link href={`/profile/${user?.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+        <Avatar className="h-8 w-8 group-data-[collapsible=icon]:opacity-0 transition-opacity duration-500 ease-in-out">
+          {imageSrc && !imageError ? (
+            <div className="relative h-full w-full">
+              <Image
+                src={imageSrc}
+                alt={user?.name || "User"}
+                fill
+                className="object-cover"
+                onError={handleImageError}
+                unoptimized={imageSrc.includes('googleusercontent.com')}
+                referrerPolicy="no-referrer"
+                priority
+              />
+            </div>
+          ) : (
+            <AvatarFallback className="bg-zinc-800">
+              <User className="h-4 w-4 text-zinc-400" />
+            </AvatarFallback>
+          )}
+        </Avatar>
+        <div className="group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hidden transition-opacity duration-500 ease-in-out min-w-0">
+          <p className="text-sm font-medium whitespace-nowrap truncate">
+            {user?.name || "User"}
+          </p>
+          <p className="text-xs text-gray-400 whitespace-nowrap truncate">
+            {user?.email?.split("@")[0] || "Free"}
+          </p>
+        </div>
+      </Link>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto p-1 rounded hover:bg-zinc-800 transition-colors"
+            aria-label="View source code"
+          >
+            <FaGithub  className="h-5 w-5 text-zinc-400 hover:text-white" />
+          </a>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <span>Source code</span>
+        </TooltipContent>
+      </Tooltip>
+    </div>
   );
 };
 
