@@ -114,7 +114,7 @@ export function ModelSelector({
     if (!currentApiKey) {
       setAvailableModels([...defaultModels, ...imageModel]);
     }
-  }, []);
+  }, [currentApiKey, defaultModels, imageModel, setAvailableModels]);
 
   useEffect(() => {
     const loadModels = async () => {
