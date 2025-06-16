@@ -41,6 +41,8 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
 
   const { data: chats, isLoading } = trpc.chat.getChatsForUser.useQuery({
     searchQuery,
+  }, {
+    enabled: !!session.data?.user,
   });
 
   const deleteChat = trpc.chat.deleteChat.useMutation({
