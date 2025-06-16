@@ -85,36 +85,6 @@
   --chat-background: #000000;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-}
-
-*::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-}
-
-*::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
-  border-radius: 4px;
-  border: 2px solid var(--scrollbar-track);
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-thumb-hover);
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-}
-
 .dark {
   --background: #060606;
   --foreground: oklch(0.985 0 0);
@@ -170,6 +140,7 @@
   --chat-radius: 9px;
 
   --animate-appear: appear 0.5s ease-in-out;
+  --animate-fadeInStreaming: fadeInStreaming 0.4s ease forwards;
 
   @keyframes appear {
     from {
@@ -179,10 +150,48 @@
       opacity: 1;
     }
   }
+
+  @keyframes fadeInStreaming {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+
 }
 
 
 [data-sidebar-collapsed="true"] {
   --sidebar-margin: 0;
   --chat-radius: 0;
+}
+
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

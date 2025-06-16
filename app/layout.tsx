@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Silkscreen, Space_Grotesk, Sora } from "next/font/google";
 import { TRPCProvider } from "@/trpc/client";
 import { SessionProvider } from "@/modules/auth/provider/session-provider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 const silkscreen = Silkscreen({
   variable: "--font-silkscreen",

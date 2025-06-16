@@ -18,7 +18,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       openRouterApiKey: null,
       geminiApiKey: null,
-      selectedModel: "deepseek/deepseek-chat-v3-0324:free",
+      selectedModel: "",
       availableModels: [],
       setOpenRouterApiKey: (key) => set({ openRouterApiKey: key }),
       setGeminiApiKey: (key) => set({ geminiApiKey: key }),

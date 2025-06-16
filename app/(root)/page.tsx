@@ -32,7 +32,6 @@ const Homepage = () => {
       const { chatId } = await res.json();
       setInitialMessage(userMessage);
       router.push(`/chat/${chatId}`);
-
     } catch (error) {
       console.error("Error creating chat:", error);
     } finally {

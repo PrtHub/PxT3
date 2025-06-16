@@ -8,6 +8,7 @@ import { useInitialMessageStore } from "../store/initial-message-store";
 import { trpc } from "@/trpc/client";
 import ChatHeader from "./chat-header";
 import { useAttachmentsStore } from "../store/attachments-store";
+import { toast } from "sonner";
 
 interface ChatPageProps {
   chatId: string;
@@ -151,6 +152,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
 
         if (!res.ok || !res.body) {
           const errorText = await res.text();
+          toast.error("Error in Network response");
           throw new Error(
             `Network response was not ok: ${res.status} ${errorText}`
           );
@@ -182,6 +184,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             utils.chat.getChatsForUser.invalidate();
             abortControllerRef.current = null;
             console.log("[ChatPage] Streaming done naturally.");
+            toast.success("Streaming done naturally.");
             return;
           }
 
@@ -223,9 +226,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
                 }
               } else if (event.event === "end") {
                 utils.chat.getChatsForUser.invalidate();
+                fetchMessages(initialChatId);
               }
             } catch (err) {
               console.error("Failed to parse stream event:", eventString, err);
+              toast.error("Failed to parse stream event");
             }
           }
           
@@ -243,6 +248,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             );
           } else {
             console.error("Fetch error:", err);
+            toast.error("Failed to fetch message");
           }
         }
         setLoading(false);

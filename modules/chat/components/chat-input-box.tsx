@@ -63,6 +63,12 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     }
   }, [initialMessage]);
 
+  useEffect(() => {
+    if (!selectedModel && availableModels && availableModels.length > 0) {
+      setSelectedModel(availableModels[0].id);
+    }
+  }, [selectedModel, availableModels, setSelectedModel]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();

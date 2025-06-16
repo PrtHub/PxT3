@@ -6,6 +6,7 @@ import { Bot, Copy, Check, Edit, X, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import CodeBlock from "@/components/code-block";
@@ -121,8 +122,10 @@ export function ChatMessage({
     content.startsWith("data:image") ||
     content.startsWith("https://ik.imagekit.io/");
 
-    // const isFirefox = navigator.userAgent.includes('Firefox');
 const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
+
+
+  const cleanedContent = content.replace(/^[ \t]+/gm, '');
 
   return (
     <div
@@ -257,6 +260,7 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
                   )
                 ) : (
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
                       code({ className, children, ...props }) {
@@ -285,7 +289,7 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
                       table({ children }) {
                         return (
                           <div className="my-4 overflow-x-auto">
-                            <table className="w-full border-collapse">
+                            <table className="w-full border-collapse border border-zinc-800">
                               {children}
                             </table>
                           </div>
@@ -310,14 +314,15 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
                       },
                       th({ children }) {
                         return (
-                          <th className="border-b border-zinc-600 px-4 py-2 text-left font-semibold text-zinc-200">
+                          <th className="border border-zinc-800 px-4 py-2 text-left font-semibold text-zinc-200">
                             {children}
                           </th>
                         );
                       },
+                      
                       td({ children }) {
                         return (
-                          <td className="border-t border-zinc-700/50 px-4 py-2 text-zinc-300">
+                          <td className="border border-zinc-800 px-4 py-2 text-zinc-300">
                             {children}
                           </td>
                         );
@@ -413,7 +418,7 @@ const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigato
                       },
                     }}
                   >
-                    {content}
+                    {cleanedContent}
                   </ReactMarkdown>
                 )}
                 {content.length === 0 && isStreaming && (
