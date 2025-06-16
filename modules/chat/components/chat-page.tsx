@@ -255,7 +255,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         setStreamingResponse("");
         abortControllerRef.current = null;
       } finally {
-        clearAttachments(initialChatId);
+        clearAttachments(initialChatId || 'new-chat');
       }
     },
     [
@@ -266,6 +266,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       utils.chat.getChatsForUser,
       webSearchConfig,
       clearAttachments,
+      initialAttachments,
     ]
   );
 
