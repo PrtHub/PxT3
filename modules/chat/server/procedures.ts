@@ -284,6 +284,26 @@ export const ChatRouter = createTRPCRouter({
             });
           }
 
+          const branchedChats = await db
+            .select()
+            .from(chats)
+            .where(eq(chats.parentChatId, chatId));
+
+          if (branchedChats.length > 0) {
+            await Promise.all(
+              branchedChats.map((chat) =>
+                db
+                  .update(chats)
+                  .set({
+                    parentChatId: null,
+                    branchedFromMessageId: null,
+                    branchName: null,
+                  })
+                  .where(eq(chats.id, chat.id))
+              )
+            );
+          }
+
           await db
             .delete(chats)
             .where(eq(chats.id, chatId));

@@ -82,10 +82,7 @@ const ChatHeader = ({ chatId }: ChatHeaderProps) => {
     title: string;
     branchName: string | null;
   }) => {
-    if (chat.branchName) {
-      return chat.title.replace(/^Branch from: /, "");
-    }
-    return chat.title;
+    return chat.title.replace(/^Branch from: /, "");
   };
 
   const handleShareClick = () => {

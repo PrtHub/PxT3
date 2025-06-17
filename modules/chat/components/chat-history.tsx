@@ -55,11 +55,8 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   });
 
   const formatChatTitle = (chat: { title: string; branchName: string | null }) => {
-    if (chat.branchName) {
       const cleanTitle = chat.title.replace(/^Branch from: /, '');
       return cleanTitle;
-    }
-    return chat.title;
   };
 
   const handleDeleteClick = (e: React.MouseEvent, chatId: string) => {
