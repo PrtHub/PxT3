@@ -6,6 +6,7 @@ import ChatInputBox from '@/modules/chat/components/chat-input-box';
 import { useRouter } from 'next/navigation';
 import { useInitialMessageStore } from '@/modules/chat/store/initial-message-store';
 import { useAttachmentsStore } from '@/modules/chat/store/attachments-store';
+import { useSettingsStore } from '@/modules/chat/store/settings-store';
 
 const Homepage = () => {
   const router = useRouter();
@@ -15,7 +16,11 @@ const Homepage = () => {
 
   const { attachments } = useAttachmentsStore();
 
-  console.log("Attachments FROM HOME", attachments)
+  const { selectedModels } = useSettingsStore();
+
+  const selectedModel = selectedModels['new-chat'];
+
+  console.log("selectedModel from Homepage", selectedModel)
 
   const handleSendMessage = async (userMessage: string) => {
     setLoading(true);

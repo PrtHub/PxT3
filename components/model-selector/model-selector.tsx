@@ -142,11 +142,11 @@ export function ModelSelector({
     }
   }, [currentApiKey, isOpen, defaultModels, imageModel, setAvailableModels]);
 
-  useEffect(() => {
-    if (!selectedModel && defaultModels.length > 0) {
-      onModelSelect(defaultModels[0].id);
-    }
-  }, [selectedModel, defaultModels, onModelSelect]);
+  // useEffect(() => {
+  //   if (!selectedModel && defaultModels.length > 0) {
+  //     onModelSelect(defaultModels[0].id);
+  //   }
+  // }, [selectedModel, defaultModels, onModelSelect]);
 
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);

@@ -47,9 +47,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   console.log("messages", messages);
 
   const utils = trpc.useUtils();
-  const { selectedModel, openRouterApiKey, geminiApiKey } = useSettingsStore();
+  const { selectedModels, openRouterApiKey, geminiApiKey } = useSettingsStore();
   const { clearAttachments, attachments: initialAttachments } =
     useAttachmentsStore();
+
+    const selectedModel = selectedModels[initialChatId];
+
+    console.log("selectedModel", selectedModel);
 
   const handleWebSearchConfigChange = useCallback(
     (config: { enabled: boolean }) => {

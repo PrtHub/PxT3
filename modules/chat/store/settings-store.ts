@@ -5,11 +5,11 @@ import { persist } from "zustand/middleware";
 interface SettingsState {
   openRouterApiKey: string | null;
   geminiApiKey: string | null;
-  selectedModel: string;
+  selectedModels: { [key: string]: string };
   availableModels: OpenRouterModel[];
   setOpenRouterApiKey: (key: string | null) => void;
   setGeminiApiKey: (key: string | null) => void;
-  setSelectedModel: (model: string) => void;
+  setSelectedModel: (chatId: string, model: string) => void;
   setAvailableModels: (models: OpenRouterModel[]) => void;
 }
 
@@ -18,11 +18,17 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       openRouterApiKey: null,
       geminiApiKey: null,
-      selectedModel: "",
+      selectedModels: {},
       availableModels: [],
       setOpenRouterApiKey: (key) => set({ openRouterApiKey: key }),
       setGeminiApiKey: (key) => set({ geminiApiKey: key }),
-      setSelectedModel: (model) => set({ selectedModel: model }),
+      setSelectedModel: (chatId, model) =>
+        set((state) => {
+          if (state.selectedModels[chatId] === model) return state;
+          return {
+            selectedModels: { ...state.selectedModels, [chatId]: model },
+          };
+        }),
       setAvailableModels: (models) => set({ availableModels: models }),
     }),
     {
@@ -30,8 +36,8 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         openRouterApiKey: state.openRouterApiKey,
         geminiApiKey: state.geminiApiKey,
-        selectedModel: state.selectedModel,
+        selectedModels: state.selectedModels,
       }),
     }
   )
-); 
+);

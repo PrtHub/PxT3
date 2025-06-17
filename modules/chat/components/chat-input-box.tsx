@@ -45,7 +45,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   const { addAttachment, getAttachments, removeAttachment } =
     useAttachmentsStore();
   const {
-    selectedModel,
+    selectedModels,
     setSelectedModel,
     setOpenRouterApiKey,
     openRouterApiKey,
@@ -53,6 +53,8 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     setGeminiApiKey,
     geminiApiKey,
   } = useSettingsStore();
+
+  const selectedModel = selectedModels[chatId] || 'deepseek/deepseek-chat-v3-0324:free'
 
   const session = useSession();
 
@@ -65,18 +67,23 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     }
   }, [initialMessage]);
 
-  useEffect(() => {
-    if (!selectedModel && availableModels && availableModels.length > 0) {
-      setSelectedModel(availableModels[0].id);
-    }
-  }, [selectedModel, availableModels, setSelectedModel]);
+  // // Initialize model selection only once when the component mounts or chatId changes
+  // useEffect(() => {
+  //   if (availableModels && availableModels.length > 0 && !selectedModel) {
+  //     // Only set the default model if there isn't already a selection for this chat
+  //     const defaultModel = availableModels[0]?.id;
+  //     if (defaultModel) {
+  //       setSelectedModel(chatId, defaultModel);
+  //     }
+  //   }
+  // }, [chatId, availableModels, selectedModel, setSelectedModel]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (inputValue.trim() && !loading) {
         if (onSend) {
-          onSend(inputValue, selectedModel, attachments);
+          onSend(inputValue, selectedModel || (availableModels.length > 0 ? availableModels[0].id : ''), attachments);
         }
         setInputValue("");
       }
@@ -114,7 +121,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       return;
     }
     if (!inputValue.trim() && attachments.length === 0) return;
-    onSend?.(inputValue.trim(), selectedModel, attachments);
+    onSend?.(inputValue.trim(), selectedModel || (availableModels.length > 0 ? availableModels[0].id : ''), attachments);
     setInputValue("");
   };
 
@@ -135,8 +142,8 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ModelSelector
-              selectedModel={selectedModel}
-              onModelSelect={setSelectedModel}
+              selectedModel={selectedModel || ''}
+              onModelSelect={(model) => setSelectedModel(chatId, model)}
               onApiKeyChange={setOpenRouterApiKey}
               currentApiKey={openRouterApiKey}
               geminiApiKey={geminiApiKey}
