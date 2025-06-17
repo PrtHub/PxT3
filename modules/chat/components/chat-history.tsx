@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { trpc } from "@/trpc/client";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GitBranch, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -34,6 +34,7 @@ interface ChatHistoryProps {
 const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   const session = useSession();
   const path = usePathname();
+  const router = useRouter()
 
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [hoveredChat, setHoveredChat] = useState<string | null>(null);
@@ -44,10 +45,12 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   }, {
     enabled: !!session.data?.user,
   });
+  console.log("path", path)
 
   const deleteChat = trpc.chat.deleteChat.useMutation({
     onSuccess: () => {
       utils.chat.getChatsForUser.invalidate();
+     
     },
     onError: () => {
       console.log("Failed to delete chat!");
@@ -68,6 +71,9 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   const confirmDelete = () => {
     if (chatToDelete) {
       deleteChat.mutate({ chatId: chatToDelete });
+      if(path === `/chat/${chatToDelete}`) {
+        router.back();
+      }
       setChatToDelete(null);
     }
   };

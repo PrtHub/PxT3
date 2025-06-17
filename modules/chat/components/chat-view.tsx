@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ChatMessage, ChatMessageLoading } from "./chat-message";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
@@ -34,6 +34,7 @@ interface ChatViewProps {
 const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: ChatViewProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(false);
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -41,12 +42,15 @@ const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: Cha
 
     const handleScroll = () => {
       if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isBottom = scrollHeight - (scrollTop + clientHeight) < 100;
+      setIsAtBottom(isBottom);
     };
 
     if (loading || streamingResponse) {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      const isAtBottom = scrollHeight - (scrollTop + clientHeight) < 100;
-      if (!isAtBottom) {
+      const isBottom = scrollHeight - (scrollTop + clientHeight) < 100;
+      if (!isBottom) {
         scrollToBottom();
       }
     }
@@ -103,28 +107,30 @@ const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: Cha
       </div>
 
       <div className="fixed xl:bottom-24 bottom-40 right-6 z-50">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={scrollToBottom}
-              size="icon"
-              className={cn(
-                "relative w-10 h-10 rounded-full shadow-lg cursor-pointer",
-                "bg-button backdrop-blur-sm border border-button/50",
-                "hover:bg-button/90 hover:scale-105",
-                "transition-all duration-200 ease-out",
-                "group"
-              )}
-              aria-label="Scroll to bottom"
-            >
-              <ArrowDown className="h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
-              <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Scroll to bottom</p>
-          </TooltipContent>
-        </Tooltip>
+        {!isAtBottom && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={scrollToBottom}
+                size="icon"
+                className={cn(
+                  "relative w-10 h-10 rounded-full shadow-lg cursor-pointer",
+                  "bg-button backdrop-blur-sm border border-button/50",
+                  "hover:bg-button/90 hover:scale-105",
+                  "transition-all duration-200 ease-out",
+                  "group"
+                )}
+                aria-label="Scroll to bottom"
+              >
+                <ArrowDown className="h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
+                <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Scroll to bottom</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

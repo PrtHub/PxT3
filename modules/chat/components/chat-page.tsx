@@ -51,9 +51,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const { clearAttachments, attachments: initialAttachments } =
     useAttachmentsStore();
 
-    const selectedModel = selectedModels[initialChatId];
+  const selectedModel = selectedModels[initialChatId];
 
-    console.log("selectedModel", selectedModel);
+  console.log("selectedModel", selectedModel);
 
   const handleWebSearchConfigChange = useCallback(
     (config: { enabled: boolean }) => {
