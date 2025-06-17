@@ -291,5 +291,29 @@ export const ChatRouter = createTRPCRouter({
           return {
             success: true,
           };
-      })
+      }),
+      deleteMessage: protectedProcedure
+      .input(
+        z.object({
+          messageId: z.string().uuid(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { userId } = ctx;
+        const { messageId } = input;
+    
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User not authenticated",
+          });
+        }
+    
+        await db.delete(messages).where(eq(messages.id, messageId));
+        await db.delete(messages).where(eq(messages.parentId, messageId));
+        await db.delete(attachments).where(eq(attachments.messageId, messageId));
+    
+        return { success: true };
+      }),
+      
 });

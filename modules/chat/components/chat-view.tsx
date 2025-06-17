@@ -28,9 +28,10 @@ interface ChatViewProps {
   messages: Message[];
   streamingResponse: string;
   loading: boolean;
+  onUpdateMessage?: (messageId: string, newContent: string) => void;
 }
 
-const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
+const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: ChatViewProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +81,7 @@ const ChatView = ({ messages, streamingResponse, loading }: ChatViewProps) => {
                   content={message.content}
                   messageId={message.id}
                   attachments={message.attachments}
+                  onUpdateMessage={onUpdateMessage}
                 />
               ))}
               {loading && (

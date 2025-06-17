@@ -22,6 +22,7 @@ interface Attachment {
 
 interface Message {
   id: string;
+  parentId?: string | null;
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
@@ -43,15 +44,48 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     enabled: false,
   });
 
+  console.log("messages", messages);
+
   const utils = trpc.useUtils();
   const { selectedModel, openRouterApiKey, geminiApiKey } = useSettingsStore();
-  const { clearAttachments, attachments: initialAttachments } = useAttachmentsStore();
+  const { clearAttachments, attachments: initialAttachments } =
+    useAttachmentsStore();
 
-  const handleWebSearchConfigChange = useCallback((config: { enabled: boolean }) => {
-    setWebSearchConfig(prev => ({ ...prev, ...config }));
-  }, []);
+  const handleWebSearchConfigChange = useCallback(
+    (config: { enabled: boolean }) => {
+      setWebSearchConfig((prev) => ({ ...prev, ...config }));
+    },
+    []
+  );
+  
+  const deleteMessage = trpc.chat.deleteMessage.useMutation({
+    onSuccess: () => {
+      utils.chat.getChatsForUser.invalidate();
+    },
+    onError: (error) => {
+      console.error("Failed to delete message:", error);
+    },
+  });
 
-  console.log("Web search config from chat page", webSearchConfig);
+  const handleUpdateMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      try {
+        await deleteMessage.mutateAsync({ messageId });
+
+        setMessages((prevMessages) =>
+          prevMessages.filter(
+            (msg) => msg.id !== messageId && msg.parentId !== messageId
+          )
+        );
+
+        await handleSendMessage(newContent, selectedModel);
+      } catch (error) {
+        console.error("Update flow failed:", error);
+      }
+    },
+    [selectedModel]
+  );
+  
 
   const fetchMessages = async (chatId: string) => {
     const res = await fetch(`/api/chat/messages?chatId=${chatId}`);
@@ -60,6 +94,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       setMessages(
         data.messages.map((msg: Message) => ({
           id: msg.id,
+          parentId: msg.parentId || null,
           role: msg.role,
           content:
             Array.isArray(msg.content) && msg.content[0]?.text
@@ -67,11 +102,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               : typeof msg.content === "string"
               ? msg.content
               : JSON.stringify(msg.content),
-          attachments: msg.attachments?.map((att: Attachment) => ({
-            id: att.id,
-            url: att.url,
-            name: att.name
-          })) || []
+          attachments:
+            msg.attachments?.map((att: Attachment) => ({
+              id: att.id,
+              url: att.url,
+              name: att.name,
+            })) || [],
         }))
       );
     }
@@ -82,7 +118,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       const currentPartialResponse = assistantContentRef.current;
 
       isStoppedRef.current = true;
-      
+
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
 
@@ -92,10 +128,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       if (currentPartialResponse.trim()) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { 
+          {
             id: crypto.randomUUID(),
-            role: "assistant", 
-            content: currentPartialResponse 
+            role: "assistant",
+            content: currentPartialResponse,
           },
         ]);
 
@@ -109,7 +145,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             content: currentPartialResponse,
             parentMessageId: latestUserMessageIdRef.current,
           }),
-        }).catch(error => {
+        }).catch((error) => {
           console.error("Failed to save partial message:", error);
         });
       }
@@ -120,12 +156,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     async (userMessage: string, model: string, attachments?: Attachment[]) => {
       setLoading(true);
       const userMessageId = crypto.randomUUID();
-      setMessages((prev) => [...prev, { 
-        id: userMessageId,
-        role: "user", 
-        content: userMessage ,
-        attachments: attachments || []
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userMessageId,
+          role: "user",
+          content: userMessage,
+          attachments: attachments || [],
+        },
+      ]);
       setStreamingResponse("");
       assistantContentRef.current = "";
       latestUserMessageIdRef.current = userMessageId;
@@ -144,7 +183,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             apiKey: openRouterApiKey,
             geminiApiKey: geminiApiKey,
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
-            attachments: attachments || initialAttachments['new-chat'] || [],
+            attachments: attachments || initialAttachments["new-chat"] || [],
           }),
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -172,10 +211,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             if (!isStoppedRef.current && assistantContentRef.current.trim()) {
               setMessages((prevMessages) => [
                 ...prevMessages,
-                { 
+                {
                   id: crypto.randomUUID(),
-                  role: "assistant", 
-                  content: assistantContentRef.current 
+                  role: "assistant",
+                  content: assistantContentRef.current,
                 },
               ]);
             }
@@ -199,7 +238,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               .slice(0, eventEndIndex)
               .replace(/^data: /, "");
             buffer = buffer.slice(eventEndIndex + 2);
-            
+
             try {
               const event = JSON.parse(eventString);
               if (event.event === "userMessageCreated") {
@@ -215,10 +254,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
                   const imageUrl = event.data;
                   setMessages((prev) => [
                     ...prev,
-                    { 
+                    {
                       id: crypto.randomUUID(),
-                      role: "assistant", 
-                      content: imageUrl 
+                      role: "assistant",
+                      content: imageUrl,
                     },
                   ]);
                   assistantContentRef.current = "";
@@ -233,7 +272,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               toast.error("Failed to parse stream event");
             }
           }
-          
+
           if (!isStoppedRef.current) {
             await processStream();
           }
@@ -255,7 +294,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         setStreamingResponse("");
         abortControllerRef.current = null;
       } finally {
-        clearAttachments(initialChatId || 'new-chat');
+        clearAttachments(initialChatId || "new-chat");
       }
     },
     [
@@ -265,7 +304,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       geminiApiKey,
       webSearchConfig,
       clearAttachments,
-      initialAttachments
+      initialAttachments,
+      utils.chat.getChatsForUser,
     ]
   );
 
@@ -297,6 +337,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         messages={messages}
         streamingResponse={streamingResponse}
         loading={loading}
+        onUpdateMessage={handleUpdateMessage}
       />
       <ChatInputBox
         onSend={handleSendMessage}
