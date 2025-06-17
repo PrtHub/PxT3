@@ -12,15 +12,13 @@ const Homepage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
-  const {message} = useInitialMessageStore()
+  const {message, setInitialModel} = useInitialMessageStore()
 
   const { attachments } = useAttachmentsStore();
 
-  const { selectedModels } = useSettingsStore();
+  const { selectedModels, setSelectedModel } = useSettingsStore();
 
-  const selectedModel = selectedModels['new-chat'];
-
-  console.log("selectedModel from Homepage", selectedModel)
+  const selectedModel = selectedModels['new-chat']
 
   const handleSendMessage = async (userMessage: string) => {
     setLoading(true);
@@ -38,6 +36,8 @@ const Homepage = () => {
 
       const { chatId } = await res.json();
       setInitialMessage(userMessage);
+      setInitialModel(selectedModel);
+      setSelectedModel(chatId, selectedModel);
       router.push(`/chat/${chatId}`);
     } catch (error) {
       console.error("Error creating chat:", error);

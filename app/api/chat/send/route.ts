@@ -56,6 +56,7 @@ const sendMessageInputSchema = z.object({
   geminiApiKey: z.string().optional().nullable(),
   parentMessageId: z.string().optional().nullable(),
   attachments: z.array(attachmentSchema).optional().default([]),
+  isRetry: z.boolean().optional().default(false),
   webSearch: z
     .object({
       enabled: z.boolean().default(false),
@@ -112,20 +113,25 @@ export async function POST(req: NextRequest) {
               throw new Error("You are not authorized to access this chat.");
             }
 
-            const userMessageId = crypto.randomUUID();
-            await db.insert(messages).values({
-              id: userMessageId,
-              chatId: currentChatId,
-              role: "user",
-              content: typeof input.content === "string" ? input.content : JSON.stringify(input.content),
-              contentType: typeof input.content === "string" ? "text" : "image",
-              parentId: input.parentMessageId ?? null,
-            });
+            let userMessageId: string | null = null;
+            if (input.content && !input.isRetry) {
+              userMessageId = crypto.randomUUID();
+              await db.insert(messages).values({
+                id: userMessageId,
+                chatId: currentChatId,
+                role: "user",
+                content: typeof input.content === "string" ? input.content : JSON.stringify(input.content),
+                contentType: typeof input.content === "string" ? "text" : "image",
+                parentId: input.parentMessageId ?? null,
+              });
 
-            enqueue({
-              event: "userMessageCreated",
-              data: { userMessageId: userMessageId },
-            });
+              enqueue({
+                event: "userMessageCreated",
+                data: { userMessageId: userMessageId },
+              });
+            } else if (input.isRetry) {
+              userMessageId = input.parentMessageId ?? null;
+            }
 
             const genAI = getGeminiClient(input.geminiApiKey);
             const prompt =
@@ -238,7 +244,7 @@ export async function POST(req: NextRequest) {
         }
 
         let userMessageId: string | null = null;
-        if (input.content) {
+        if (input.content && !input.isRetry) {
           const userMessageContentType =
             typeof input.content === "string" ? "text" : "parts";
           const userMessageContentForDb =
@@ -278,6 +284,8 @@ export async function POST(req: NextRequest) {
             event: "userMessageCreated",
             data: { userMessageId: userMessageId },
           });
+        } else if (input.isRetry) {
+          userMessageId = input.parentMessageId ?? ''
         }
 
         const chatMessages = await db

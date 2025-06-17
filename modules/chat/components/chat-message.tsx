@@ -325,6 +325,7 @@ export function ChatMessage({
         isCopied={isCopied}
         isBranched={isBranched}
         isReading={isReading}
+        messageId={messageId}
       />
     </div>
   );

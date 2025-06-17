@@ -16,6 +16,7 @@ import { ModelList } from "./model-list";
 import getModelIcon from "./model-icons";
 import { ApiKeyDialog } from "@/components/api-key-dialog";
 import { useRouter } from "next/navigation";
+import { useInitialMessageStore } from "@/modules/chat/store/initial-message-store";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -73,6 +74,7 @@ export function ModelSelector({
   const [pendingModel, setPendingModel] = useState<string | null>(null);
 
   const { setAvailableModels, availableModels } = useSettingsStore();
+  const { initialModel } = useInitialMessageStore();
 
   const defaultModels = useMemo(() => {
     return freeModels.data.map((model) => ({
@@ -142,11 +144,11 @@ export function ModelSelector({
     }
   }, [currentApiKey, isOpen, defaultModels, imageModel, setAvailableModels]);
 
-  // useEffect(() => {
-  //   if (!selectedModel && defaultModels.length > 0) {
-  //     onModelSelect(defaultModels[0].id);
-  //   }
-  // }, [selectedModel, defaultModels, onModelSelect]);
+  useEffect(() => {
+    if (!selectedModel) {
+      onModelSelect(defaultModels[0].id);
+    }
+  }, [selectedModel, defaultModels, onModelSelect]);
 
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);
@@ -316,7 +318,7 @@ export function ModelSelector({
                   <ModelList
                     title="Premium Models"
                     models={groupedPremiumModels}
-                    selectedModel={selectedModel}
+                    selectedModel={selectedModel ?? initialModel}
                     hasApiKey={hasApiKey}
                     getModelIcon={getModelIcon}
                     isFreeModel={isFreeModel}
@@ -327,7 +329,7 @@ export function ModelSelector({
                 <ModelList
                   title="Free Models"
                   models={groupedFreeModels}
-                  selectedModel={selectedModel}
+                  selectedModel={selectedModel ?? initialModel}
                   hasApiKey={hasApiKey}
                   isFree={true}
                   getModelIcon={getModelIcon}

@@ -90,24 +90,24 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
 }));
 
-export const chats = pgTable("chats", {
-  id: text("id").primaryKey().notNull(),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull().default("New Chat"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  shareId: text("share_id").unique().notNull(),
-  isPublic: boolean("is_public").default(false).notNull(),
+  export const chats = pgTable("chats", {
+    id: text("id").primaryKey().notNull(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default("New Chat"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    shareId: text("share_id").unique().notNull(),
+    isPublic: boolean("is_public").default(false).notNull(),
   parentChatId: text("parent_chat_id").references(() => chats.id, { onDelete: "set null" }),
   branchedFromMessageId: text("branched_from_message_id").references(() => messages.id, { onDelete: "set null" }),
-  branchName: text("branch_name"),
-}, (table) => {
-  return [
-    index("chats_title_idx").on(table.title),
-  ];
-});
+    branchName: text("branch_name"),
+  }, (table) => {
+    return [
+      index("chats_title_idx").on(table.title),
+    ];
+  });
 
 export const chatsRelations = relations(chats, ({ one, many }) => ({
   user: one(users, {

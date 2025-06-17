@@ -17,6 +17,7 @@ import FileUploadComponent from "@/components/file-upload";
 import { Image, ImageKitProvider } from "@imagekit/next";
 import { useAttachmentsStore } from "../store/attachments-store";
 import { useSession } from "next-auth/react";
+import { useInitialMessageStore } from "../store/initial-message-store";
 
 interface ChatInputBoxProps {
   onSend?: (message: string, model: string, attachments?: any[]) => void;
@@ -44,22 +45,23 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
   const chatId = path === '/' ? 'new-chat' : path.split("/")[2];
   const { addAttachment, getAttachments, removeAttachment } =
     useAttachmentsStore();
+    const {initialModel} = useInitialMessageStore()
   const {
-    selectedModels,
     setSelectedModel,
     setOpenRouterApiKey,
     openRouterApiKey,
     availableModels,
     setGeminiApiKey,
     geminiApiKey,
+    selectedModels
   } = useSettingsStore();
-
-  const selectedModel = selectedModels[chatId] || 'deepseek/deepseek-chat-v3-0324:free'
 
   const session = useSession();
 
   const [inputValue, setInputValue] = useState(initialMessage || "");
   const attachments = initialAttachments || getAttachments(chatId);
+
+  const selectedModel = selectedModels[chatId];
 
   useEffect(() => {
     if (initialMessage !== undefined) {
@@ -67,23 +69,21 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     }
   }, [initialMessage]);
 
-  // // Initialize model selection only once when the component mounts or chatId changes
-  // useEffect(() => {
-  //   if (availableModels && availableModels.length > 0 && !selectedModel) {
-  //     // Only set the default model if there isn't already a selection for this chat
-  //     const defaultModel = availableModels[0]?.id;
-  //     if (defaultModel) {
-  //       setSelectedModel(chatId, defaultModel);
-  //     }
-  //   }
-  // }, [chatId, availableModels, selectedModel, setSelectedModel]);
+  useEffect(() => {
+    if (!selectedModel) {
+      const defaultModel = availableModels[0]?.id;
+      if (defaultModel) {
+        setSelectedModel(chatId, defaultModel);
+      }
+    }
+  }, [selectedModel, chatId, availableModels, setSelectedModel]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (inputValue.trim() && !loading) {
         if (onSend) {
-          onSend(inputValue, selectedModel || (availableModels.length > 0 ? availableModels[0].id : ''), attachments);
+          onSend(inputValue, selectedModel, attachments);
         }
         setInputValue("");
       }
@@ -92,7 +92,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
 
   const hasImageInput = availableModels?.some(
     (m) =>
-      m.id === selectedModel &&
+      m.id === initialModel &&
       m.architecture?.input_modalities?.includes("image")
   );
 
@@ -121,7 +121,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
       return;
     }
     if (!inputValue.trim() && attachments.length === 0) return;
-    onSend?.(inputValue.trim(), selectedModel || (availableModels.length > 0 ? availableModels[0].id : ''), attachments);
+    onSend?.(inputValue.trim(), selectedModel, attachments);
     setInputValue("");
   };
 
@@ -142,7 +142,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ModelSelector
-              selectedModel={selectedModel || ''}
+              selectedModel={selectedModel || initialModel || ''}
               onModelSelect={(model) => setSelectedModel(chatId, model)}
               onApiKeyChange={setOpenRouterApiKey}
               currentApiKey={openRouterApiKey}
@@ -158,7 +158,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               hasWebSearch={
                 availableModels?.some(
                   (m) =>
-                    m.id === selectedModel &&
+                    m.id === initialModel &&
                     m.supported_parameters?.includes("tools")
                 ) ?? false
               }

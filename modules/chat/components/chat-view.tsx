@@ -73,7 +73,7 @@ const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: Cha
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto pb-60 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
       >
-        <div className="max-w-3xl mx-auto w-full">
+        <div className="max-w-3xl mx-auto mt-28 w-full">
           {messages.length === 0 && !loading ? (
             <ChatMessageLoading />
           ) : (

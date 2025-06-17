@@ -9,6 +9,7 @@ import { trpc } from "@/trpc/client";
 import ChatHeader from "./chat-header";
 import { useAttachmentsStore } from "../store/attachments-store";
 import { toast } from "sonner";
+import { useRetryMessageStore } from "../store/retry-message-store";
 
 interface ChatPageProps {
   chatId: string;
@@ -30,6 +31,7 @@ interface Message {
 
 const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const initialMessage = useInitialMessageStore((state) => state.message);
+  const initialModel = useInitialMessageStore((state) => state.initialModel);
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
   const initialMessageSent = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,10 +52,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const { selectedModels, openRouterApiKey, geminiApiKey } = useSettingsStore();
   const { clearAttachments, attachments: initialAttachments } =
     useAttachmentsStore();
+  const {
+    isRetrying,
+    aiMessageId,
+    parentId,
+    userMessageContent,
+    selectedModel: retrySelectedModel,
+    reset,
+  } = useRetryMessageStore();
 
-  const selectedModel = selectedModels[initialChatId];
-
-  console.log("selectedModel", selectedModel);
+  const selectedModel = selectedModels[initialChatId] || initialModel;
 
   const handleWebSearchConfigChange = useCallback(
     (config: { enabled: boolean }) => {
@@ -61,7 +69,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     },
     []
   );
-  
+
   const deleteMessage = trpc.chat.deleteMessage.useMutation({
     onSuccess: () => {
       utils.chat.getChatsForUser.invalidate();
@@ -71,25 +79,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     },
   });
 
-  const handleUpdateMessage = useCallback(
-    async (messageId: string, newContent: string) => {
-      try {
-        await deleteMessage.mutateAsync({ messageId });
-
-        setMessages((prevMessages) =>
-          prevMessages.filter(
-            (msg) => msg.id !== messageId && msg.parentId !== messageId
-          )
-        );
-
-        await handleSendMessage(newContent, selectedModel);
-      } catch (error) {
-        console.error("Update flow failed:", error);
-      }
+  const deleteAIMessage = trpc.chat.deleteAIMessage.useMutation({
+    onSuccess: () => {
+      utils.chat.getChatsForUser.invalidate();
     },
-    [selectedModel]
-  );
-  
+    onError: (error) => {
+      console.error("Failed to delete message:", error);
+      toast.error("Failed to delete AI message");
+    },
+  });
 
   const fetchMessages = async (chatId: string) => {
     const res = await fetch(`/api/chat/messages?chatId=${chatId}`);
@@ -157,21 +155,32 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   }, [loading, initialChatId]);
 
   const handleSendMessage = useCallback(
-    async (userMessage: string, model: string, attachments?: Attachment[]) => {
+    async (
+      userMessage: string,
+      model: string,
+      attachments?: Attachment[],
+      parentId?: string,
+      isRetry?: boolean
+    ) => {
       setLoading(true);
-      const userMessageId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: userMessageId,
-          role: "user",
-          content: userMessage,
-          attachments: attachments || [],
-        },
-      ]);
+      if (!isRetry) {
+        const userMessageId = crypto.randomUUID();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: userMessageId,
+            role: "user",
+            content: userMessage,
+            attachments: attachments || [],
+          },
+        ]);
+        latestUserMessageIdRef.current = userMessageId;
+      } else {
+        latestUserMessageIdRef.current = parentId || null;
+      }
+
       setStreamingResponse("");
       assistantContentRef.current = "";
-      latestUserMessageIdRef.current = userMessageId;
       isStoppedRef.current = false;
 
       const controller = new AbortController();
@@ -186,8 +195,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             model: selectedModel ?? model,
             apiKey: openRouterApiKey,
             geminiApiKey: geminiApiKey,
+            parentMessageId: parentId,
             webSearch: webSearchConfig.enabled ? { enabled: true } : undefined,
             attachments: attachments || initialAttachments["new-chat"] || [],
+            isRetry: isRetry === true,
           }),
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -309,21 +320,79 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       webSearchConfig,
       clearAttachments,
       initialAttachments,
-      utils.chat.getChatsForUser,
     ]
   );
+
+  const handleUpdateMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      try {
+        await deleteMessage.mutateAsync({ messageId });
+
+        setMessages((prevMessages) =>
+          prevMessages.filter(
+            (msg) => msg.id !== messageId && msg.parentId !== messageId
+          )
+        );
+
+        await handleSendMessage(newContent, selectedModel || "");
+      } catch (error) {
+        console.error("Update flow failed:", error);
+      }
+    },
+    [deleteMessage, selectedModel, handleSendMessage]
+  );
+
+  useEffect(() => {
+    if (
+      isRetrying &&
+      aiMessageId &&
+      parentId &&
+      userMessageContent &&
+      retrySelectedModel
+    ) {
+      reset();
+
+      const doRetry = async () => {
+        try {
+          await deleteAIMessage.mutateAsync({ messageId: aiMessageId });
+          setMessages((prev) => prev.filter((msg) => msg.id !== aiMessageId));
+          await handleSendMessage(
+            userMessageContent,
+            retrySelectedModel,
+            undefined,
+            parentId,
+            true
+          );
+        } catch (error) {
+          console.error("Retry message failed:", error);
+          toast.error("Retry failed");
+        }
+      };
+
+      doRetry();
+    }
+  }, [
+    isRetrying,
+    aiMessageId,
+    parentId,
+    userMessageContent,
+    retrySelectedModel,
+    deleteAIMessage,
+    handleSendMessage,
+    reset,
+  ]);
 
   useEffect(() => {
     if (initialChatId) {
       fetchMessages(initialChatId);
     }
-    utils.chat.getChatsForUser.invalidate();
-  }, [initialChatId, utils.chat.getChatsForUser]);
+   utils.chat.getChatsForUser.invalidate()
+  }, [initialChatId]);
 
   useEffect(() => {
     if (initialMessage && initialChatId && !initialMessageSent.current) {
       initialMessageSent.current = true;
-      handleSendMessage(initialMessage, selectedModel);
+      handleSendMessage(initialMessage, selectedModel || "");
       setInitialMessage(null);
     }
   }, [
