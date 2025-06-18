@@ -17,6 +17,7 @@ PxT3 is a cutting-edge AI chat application built with the latest web technologie
 - **File Attachments**: Upload and share files in your conversations
 - **Message Editing**: Edit and refine your messages
 - **Context-Aware**: Maintains conversation context for more coherent discussions
+- **Model Switching**: Retry AI responses with different models on the fly
 
 ### 🔐 Authentication & Data
 - **Secure Authentication**: Built with NextAuth.js
