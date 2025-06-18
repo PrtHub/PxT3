@@ -286,7 +286,7 @@ export function ModelSelector({
               {!currentApiKey && (
                 <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground">
                   <p className="mb-2">
-                    Some models require an OpenRouter API key. Add your key to
+                    Premium models require an OpenRouter API key. Add your key to
                     access all available models.
                   </p>
                   <Button
