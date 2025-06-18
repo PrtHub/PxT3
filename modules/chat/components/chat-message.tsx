@@ -168,9 +168,10 @@ export function ChatMessage({
           "w-full max-w-3xl overflow-hidden border rounded-md",
           isUser
             ? "border-button/20 bg-button/15 px-4 pt-5 w-fit"
-            : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
+            : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4 w-full",
           isChrome && "ml-1.5",
           content.length === 0 && "w-fit px-4 py-2",
+          isImageMessage && "w-fit",
           isEditing && "w-full"
         )}
       >
@@ -265,7 +266,7 @@ export function ChatMessage({
                 )}
                 {isImageMessage ? (
                   content ? (
-                    <div className="aspect-square w-full h-[400px] pb-4 overflow-hidden">
+                    <div className="aspect-square w-96 h-[400px] pb-4 overflow-hidden">
                       <img
                         src={content}
                         alt="Generated content"
@@ -274,7 +275,7 @@ export function ChatMessage({
                       />
                     </div>
                   ) : (
-                    <div className="aspect-square w-full h-[400px] bg-zinc-800/50 rounded-lg flex flex-col items-center justify-center space-y-4 p-6 text-center">
+                    <div className="aspect-square w-96 h-[400px] bg-zinc-800/50 rounded-lg flex flex-col items-center justify-center space-y-4 p-6 text-center">
                       <div className="size-10 border-3 border-button border-t-transparent rounded-full animate-spin" />
                       <div className="space-y-2">
                         <h3 className="text-lg font-medium text-white">
