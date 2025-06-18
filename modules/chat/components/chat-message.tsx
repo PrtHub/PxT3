@@ -165,11 +165,11 @@ export function ChatMessage({
     >
       <div
         className={cn(
-          "w-fit max-w-3xl border rounded-md",
+          "w-full max-w-3xl overflow-hidden border rounded-md",
           isUser
-            ? "border-button/20 bg-button/15 px-4 pt-5"
+            ? "border-button/20 bg-button/15 px-4 pt-5 w-fit"
             : "border-zinc-700/50 bg-zinc-800/50 pt-5 px-4",
-          isChrome && "ml-2",
+          isChrome && "ml-1.5",
           content.length === 0 && "w-fit px-4 py-2",
           isEditing && "w-full"
         )}
