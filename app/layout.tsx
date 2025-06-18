@@ -22,11 +22,11 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "PxT3",
+  title: "pxt.chat | an open source AI Chat App",
   description:
     "This is a high-performance AI Chat App, leveraging the type-safe, edge-ready power of the T3 Stack. By combining the lightning-fast Drizzle ORM with Neon's serverless database, we've eliminated the bottlenecks. The result is a conversation that flows as fast as you can think, with real-time streaming and a UI that never gets in your way.",
   keywords: [
-    "PxT3",
+    "pxt.chat",
     "AI Chat App",
     "T3 Stack",
     "Drizzle ORM",
@@ -42,22 +42,22 @@ export const metadata: Metadata = {
     "Chat GPT",
     "Chat APP",
   ],
-  authors: [{ name: "PxT3" }],
+  authors: [{ name: "PxT" }],
   openGraph: {
-    title: "PxT3",
+    title: "PxT",
     description:
       "This is a high-performance AI Chat App, leveraging the type-safe, edge-ready power of the T3 Stack. By combining the lightning-fast Drizzle ORM with Neon's serverless database, we've eliminated the bottlenecks. The result is a conversation that flows as fast as you can think, with real-time streaming and a UI that never gets in your way.",
     type: "website",
     locale: "en",
-    siteName: "PxT3",
+    siteName: "PxT",
   },
   twitter: {
-    title: "PxT3",
+    title: "PxT",
     description:
       "This is a high-performance AI Chat App, leveraging the type-safe, edge-ready power of the T3 Stack. By combining the lightning-fast Drizzle ORM with Neon's serverless database, we've eliminated the bottlenecks. The result is a conversation that flows as fast as you can think, with real-time streaming and a UI that never gets in your way.",
     card: "summary_large_image",
-    site: "@PxT3",
-    creator: "@PxT3",
+    site: "@PxT",
+    creator: "@PxT",
   },
 };
 

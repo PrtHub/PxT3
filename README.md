@@ -1,6 +1,6 @@
-# PxT3: High-Performance AI Chat App
+# pxt.chat: High-Performance AI Chat App
 
-PxT3 is a cutting-edge AI chat application built with the latest web technologies. It leverages the power of Next.js 15, Drizzle ORM, and Neon's serverless database to deliver a seamless, real-time chat experience with AI models. The application features a beautiful, responsive UI built with shadcn/ui and Tailwind CSS.
+pxt.chat is a cutting-edge AI chat application built with the latest web technologies. It leverages the power of Next.js 15, Drizzle ORM, and Neon's serverless database to deliver a seamless, real-time chat experience with AI models. The application features a beautiful, responsive UI built with shadcn/ui and Tailwind CSS.
 
 ## 🚀 Features
 
@@ -59,8 +59,8 @@ PxT3 is a cutting-edge AI chat application built with the latest web technologie
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/PrtHub/PxT3
-   cd pxt3
+   git clone https://github.com/PrtHub/pxt.chat
+   cd pxt.chat
    ```
 
 2. Install dependencies:

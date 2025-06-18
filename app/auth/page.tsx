@@ -14,7 +14,7 @@ const LoginPage = () => {
           <h1 className="text-lg font-bold text-white">
             Welcome to{" "}
             <span className="font-silkscreen text-white text-2xl">
-              PxT3.chat
+              pxt.chat
             </span>
           </h1>
           <p className="text-zinc-400 font-medium">

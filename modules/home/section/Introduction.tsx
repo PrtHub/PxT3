@@ -43,7 +43,7 @@ const Introduction= () => {
           How can I help you today?
         </h1>
         <p className="lg:text-sm text-xs text-white/70 max-w-2xl mx-auto">
-          I&apos;m PxT3, your AI assistant. I can help with coding, writing, learning, and more.
+          I&apos;m pxt.chat, your AI assistant. I can help with coding, writing, learning, and more.
           Ask me anything or try one of these examples:
         </p>
 

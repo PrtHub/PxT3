@@ -25,7 +25,7 @@ const SidebarFooterSection = () => {
     }
   }, [user?.image]);
 
-  const GITHUB_URL = "https://github.com/PrtHub/PxT3";
+  const GITHUB_URL = "https://github.com/PrtHub/pxt.chat";
 
   if (isLoading) {
     return (

@@ -38,7 +38,7 @@ const MainSection = () => {
             textShadow: '0 0 10px rgba(255, 255, 255, 0.5)'
           }}
         >
-          PxT3.chat
+          pxt.chat
         </h2>
         <section className="md:flex items-center justify-center group-data-[collapsible=icon]:bg-background group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:rounded group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:left-2 hidden">
           <SidebarTrigger className="group-data-[collapsible=icon]:ml-3 w-fit px-2" />

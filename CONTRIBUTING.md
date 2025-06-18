@@ -1,14 +1,14 @@
-# Contributing to PxT3
+# Contributing to pxt.chat
 
-Thank you for your interest in contributing to PxT3! We welcome contributions from everyone, whether it's code, documentation, bug reports, or feature requests.
+Thank you for your interest in contributing to pxt.chat! We welcome contributions from everyone, whether it's code, documentation, bug reports, or feature requests.
 
 ## 🛠️ Development Setup
 
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/PrtHub/PxT3.git
-   cd PxT3
+   git clone https://github.com/PrtHub/pxt.chat.git
+   cd pxt.chat
    ```
 3. Install dependencies:
    ```bash
@@ -104,4 +104,4 @@ Good documentation is crucial. When making changes:
 
 ## 🙏 Thank You!
 
-Your contributions help make PxT3 better for everyone. We appreciate your time and effort!
+Your contributions help make PxT better for everyone. We appreciate your time and effort!
