@@ -41,6 +41,7 @@ interface ActionButtonsProps {
   isBranched: boolean;
   isReading: boolean;
   messageId: string;
+  isShared: boolean;
 }
 
 const getProviderFromModelId = (modelId: string): string => {
@@ -67,9 +68,10 @@ const ActionButtons = ({
   isBranched,
   isReading,
   messageId,
+  isShared,
 }: ActionButtonsProps) => {
   const { availableModels } = useSettingsStore();
-  const { setRetryData,  } = useRetryMessageStore()
+  const { setRetryData } = useRetryMessageStore();
 
   const { data: aiMessage } = trpc.chat.getOneMessage.useQuery({ messageId });
 
@@ -77,7 +79,7 @@ const ActionButtons = ({
     { messageId: aiMessage?.parentId ?? "" },
     { enabled: !!aiMessage?.parentId }
   );
-  
+
   const modelGroups = availableModels.reduce((acc, model) => {
     const provider = getProviderFromModelId(model.id);
     if (!acc[provider]) {
@@ -88,7 +90,8 @@ const ActionButtons = ({
   }, {} as Record<string, typeof availableModels>);
 
   const handleRetryWithModel = (modelId: string) => {
-    if (!aiMessage?.id || !aiMessage?.parentId || !parentMessage?.content) return;
+    if (!aiMessage?.id || !aiMessage?.parentId || !parentMessage?.content)
+      return;
     setRetryData({
       aiMessageId: aiMessage.id,
       parentId: aiMessage.parentId,
@@ -126,31 +129,33 @@ const ActionButtons = ({
               <p>{isCopied ? "Copied" : "Copy"}</p>
             </TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBranch}
-                  className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                >
-                  {isBranched ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
-                    </>
-                  ) : (
-                    <>
-                      <GitBranch className="h-3.5 w-3.5 mr-0.5" />
-                    </>
-                  )}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Branch off</p>
-            </TooltipContent>
-          </Tooltip>
+          {!isShared && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBranch}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    {isBranched ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 mr-0.5 text-emerald-400" />
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="h-3.5 w-3.5 mr-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Branch off</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
@@ -176,60 +181,67 @@ const ActionButtons = ({
               <p>{isReading ? "Stop" : "Read aloud"}</p>
             </TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="flex gap-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+          {!isShared && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild className="flex gap-x-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5 mr-0.5" />
+                      </Button>
+                      {/* <span>{selectedModel}</span> */}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="center"
+                      className="w-64 h-[250px] overflow-y-auto"
                     >
-                      <RefreshCcw className="h-3.5 w-3.5 mr-0.5" />
-                    </Button>
-                     {/* <span>{selectedModel}</span> */}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center"  className="w-64 h-[250px] overflow-y-auto">
-                    <DropdownMenuItem 
-                      className="text-xs flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                      onClick={() => handleRetryWithModel('same')}
-                    >
-                      <RefreshCcw className="h-3.5 w-3.5" />
-                      <span>Go with same</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-zinc-800" />
-                    <div className="px-2 py-1.5">
-                      <p className="text-xs font-medium text-zinc-400">Or try with:</p>
-                    </div>
-                    {Object.entries(modelGroups).map(([provider, models]) => (
-                      <DropdownMenuSub key={provider}>
-                        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 hover:text-white hover:bg-zinc-800/50 cursor-pointer">
-                          {getModelIcon(provider)}
-                          <span className="capitalize">{provider}</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-48">
-                          {models.map((model) => (
-                            <DropdownMenuItem
-                              key={model.id}
-                              className="text-xs flex items-center gap-2 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                              onClick={() => handleRetryWithModel(model.id)}
-                            >
-                              {getModelIcon(model.id)}
-                              <span>{model.name}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Retry message</p>
-            </TooltipContent>
-          </Tooltip>
+                      <DropdownMenuItem
+                        className="text-xs flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                        onClick={() => handleRetryWithModel("same")}
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                        <span>Go with same</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-zinc-800" />
+                      <div className="px-2 py-1.5">
+                        <p className="text-xs font-medium text-zinc-400">
+                          Or try with:
+                        </p>
+                      </div>
+                      {Object.entries(modelGroups).map(([provider, models]) => (
+                        <DropdownMenuSub key={provider}>
+                          <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 hover:text-white hover:bg-zinc-800/50 cursor-pointer">
+                            {getModelIcon(provider)}
+                            <span className="capitalize">{provider}</span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="w-48">
+                            {models.map((model) => (
+                              <DropdownMenuItem
+                                key={model.id}
+                                className="text-xs flex items-center gap-2 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                                onClick={() => handleRetryWithModel(model.id)}
+                              >
+                                {getModelIcon(model.id)}
+                                <span>{model.name}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Retry message</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </>
       )}
       {isUser && !isEditing && (
@@ -259,23 +271,25 @@ const ActionButtons = ({
               <p>{isCopied ? "Copied" : "Copy"}</p>
             </TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleEdit}
-                  className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
-                >
-                  <Edit className="h-3.5 w-3.5 mr-0.5" />
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Edit</p>
-            </TooltipContent>
-          </Tooltip>
+          {!isShared && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-0.5" />
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </>
       )}
     </div>

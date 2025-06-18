@@ -3,15 +3,10 @@ import { attachments, chats, messages } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import ChatView from "@/modules/chat/components/chat-view";
+import { Attachment } from "@/modules/chat/types";
 
 interface SharedChatPageProps {
   params: Promise<{ shareId: string }>;
-}
-
-interface Attachment {
-  id: string;
-  url: string;
-  name: string;
 }
 
 interface Message {
@@ -51,6 +46,7 @@ const SharedChatPage = async ({ params }: SharedChatPageProps) => {
     );
 
   const formattedMessages = chatMessages.map((message) => ({
+    id: message.id,
     role: message.role as "user" | "assistant" | "system",
     content:
       message.contentType === "text"
@@ -83,6 +79,7 @@ const SharedChatPage = async ({ params }: SharedChatPageProps) => {
           messages={formattedMessages as Message[]}
           streamingResponse=""
           loading={false}
+          error={null}
         />
       </div>
     </div>

@@ -38,6 +38,7 @@ export function ChatMessage({
   const router = useRouter();
   const pathname = usePathname();
   const isUser = role === "user";
+  const isShared = pathname.includes("/share/");
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -317,6 +318,7 @@ export function ChatMessage({
         isBranched={isBranched}
         isReading={isReading}
         messageId={messageId}
+        isShared={isShared}
       />
     </div>
   );
