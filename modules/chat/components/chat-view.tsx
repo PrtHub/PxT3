@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ChatMessage, ChatMessageLoading } from "./chat-message";
+import { ChatMessage } from "./chat-message";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,12 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-interface Attachment {
-  id: string;
-  url: string;
-  name: string;
-}
+import { Attachment } from "../types";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -28,10 +23,17 @@ interface ChatViewProps {
   messages: Message[];
   streamingResponse: string;
   loading: boolean;
+  error: string | null;
   onUpdateMessage?: (messageId: string, newContent: string) => void;
 }
 
-const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: ChatViewProps) => {
+const ChatView = ({
+  messages,
+  streamingResponse,
+  loading,
+  error,
+  onUpdateMessage,
+}: ChatViewProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(false);
@@ -74,38 +76,39 @@ const ChatView = ({ messages, streamingResponse, loading, onUpdateMessage }: Cha
         className="flex-1 overflow-y-auto pb-60 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
       >
         <div className="max-w-3xl mx-auto mt-28 w-full">
-          {messages.length === 0 && !loading ? (
-            <ChatMessageLoading />
-          ) : (
-            <>
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  role={message.role}
-                  content={message.content}
-                  messageId={message.id}
-                  attachments={message.attachments}
-                  onUpdateMessage={onUpdateMessage}
-                />
-              ))}
-              {loading && (
-                <>
-                  <ChatMessage
-                    role="assistant"
-                    content={streamingResponse}
-                    messageId="streaming"
-                    isStreaming={true}
-                    attachments={[]}
-                  />
-                  <div ref={messagesEndRef} />
-                </>
-              )}
-              {!loading && <div ref={messagesEndRef} />}
-            </>
-          )}
+          <>
+            {messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                role={message.role}
+                content={message.content}
+                messageId={message.id}
+                attachments={message.attachments}
+                onUpdateMessage={onUpdateMessage}
+              />
+            ))}
+
+            {loading && (
+              <ChatMessage
+                role="assistant"
+                content={streamingResponse}
+                messageId="streaming"
+                isStreaming={true}
+                attachments={[]}
+              />
+            )}
+
+            {error && (
+              <div className="flex justify-start p-4">
+                <div className="text-red-500 bg-red-500/10 p-3 rounded-md">
+                  {error}
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </> 
         </div>
       </div>
-
       <div className="fixed xl:bottom-24 bottom-40 right-6 z-50">
         {!isAtBottom && (
           <Tooltip>

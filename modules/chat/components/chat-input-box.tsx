@@ -18,9 +18,10 @@ import { Image, ImageKitProvider } from "@imagekit/next";
 import { useAttachmentsStore } from "../store/attachments-store";
 import { useSession } from "next-auth/react";
 import { useInitialMessageStore } from "../store/initial-message-store";
+import { Attachment } from "../types";
 
 interface ChatInputBoxProps {
-  onSend?: (message: string, model: string, attachments?: any[]) => void;
+  onSend?: (message: string, model: string, attachments?: Attachment[]) => void;
   onStop?: () => void;
   loading?: boolean;
   webSearchConfig?: {
@@ -29,7 +30,7 @@ interface ChatInputBoxProps {
     onConfigChange?: (config: { enabled: boolean }) => void;
   };
   message?: string | null;
-  attachments?: any[];
+  attachments?: Attachment[];
 }
 
 const ChatInputBox: React.FC<ChatInputBoxProps> = ({
@@ -42,10 +43,10 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
 }) => {
   const router = useRouter();
   const path = usePathname();
-  const chatId = path === '/' ? 'new-chat' : path.split("/")[2];
+  const chatId = path === "/" ? "new-chat" : path.split("/")[2];
   const { addAttachment, getAttachments, removeAttachment } =
     useAttachmentsStore();
-    const {initialModel} = useInitialMessageStore()
+  const { initialModel } = useInitialMessageStore();
   const {
     setSelectedModel,
     setOpenRouterApiKey,
@@ -53,7 +54,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     availableModels,
     setGeminiApiKey,
     geminiApiKey,
-    selectedModels
+    selectedModels,
   } = useSettingsStore();
 
   const session = useSession();
@@ -90,13 +91,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     }
   };
 
-  const hasImageInput = availableModels?.some(
-    (m) =>
-      m.id === initialModel &&
-      m.architecture?.input_modalities?.includes("image")
-  );
-
-  const handleUploadSuccess = (response: any) => {
+  const handleUploadSuccess = (response: Attachment) => {
     addAttachment(chatId, {
       fileId: response.fileId,
       name: response.name,
@@ -125,6 +120,17 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     setInputValue("");
   };
 
+  const hasWebSearch =
+    availableModels?.some(
+      (m) => m.id === selectedModel && m.supported_parameters?.includes("tools")
+    ) ?? false;
+
+    console.log(selectedModel)
+
+    const hasImageInput = availableModels?.some(
+      (m) => m.id === selectedModel && m.architecture?.input_modalities?.includes("image")
+    ) ?? false;
+
   return (
     <div className="absolute bottom-3 left-0 right-0 max-w-3xl mx-auto flex items-center justify-center h-28 px-4">
       <section className="w-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 rounded-t-md p-4">
@@ -140,9 +146,9 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
           />
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <ModelSelector
-              selectedModel={selectedModel || initialModel || ''}
+              selectedModel={selectedModel || initialModel || ""}
               onModelSelect={(model) => setSelectedModel(chatId, model)}
               onApiKeyChange={setOpenRouterApiKey}
               currentApiKey={openRouterApiKey}
@@ -150,26 +156,20 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               onGeminiApiKeyChange={setGeminiApiKey}
             />
 
-            <WebSearchToggle
-              enabled={webSearchConfig.enabled}
-              onToggle={(enabled) =>
-                webSearchConfig.onConfigChange?.({ enabled })
-              }
-              hasWebSearch={
-                availableModels?.some(
-                  (m) =>
-                    m.id === initialModel &&
-                    m.supported_parameters?.includes("tools")
-                ) ?? false
-              }
-            />
-            <FileUploadComponent
+            {hasWebSearch && (
+              <WebSearchToggle
+                enabled={webSearchConfig.enabled}
+                onToggle={(enabled) =>
+                  webSearchConfig.onConfigChange?.({ enabled })
+                }
+              />
+            )}
+           { hasImageInput && <FileUploadComponent
               onUploadSuccess={handleUploadSuccess}
               onUploadError={handleUploadError}
               disabled={loading}
-              hasImageInput={hasImageInput}
               currentAttachments={attachments.length}
-            />
+            />}
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {attachments.map((attachment) => (
@@ -183,10 +183,10 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                       }
                     >
                       <Image
-                        src={attachment.thumbnailUrl}
+                        src={attachment.thumbnailUrl || ""}
                         width={30}
                         height={20}
-                        alt={attachment.name}
+                        alt={attachment.name || ""}
                         className="rounded"
                       />
                     </ImageKitProvider>
@@ -195,7 +195,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                       variant={"ghost"}
                       size="icon"
                       onClick={() =>
-                        removeAttachment(chatId, attachment.fileId)
+                        removeAttachment(chatId, attachment.fileId || "")
                       }
                       className="text-zinc-400 hover:text-white cursor-pointer"
                     >
@@ -228,7 +228,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                  asChild
+                    asChild
                     variant="default"
                     size="icon"
                     className=" rounded-md cursor-pointer bg-button/80 hover:bg-button/60 w-8 h-8"
@@ -238,7 +238,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
                       }
                     }}
                   >
-                    <StopCircle className="p-1.5"/>
+                    <StopCircle className="p-1.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">

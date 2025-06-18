@@ -1,17 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { useUser } from '@/hooks/use-user';
-import { Button } from '@/components/ui/button';
-import { LogOut, Loader2, Mail, ArrowLeft, Settings, Calendar } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { trpc } from '@/trpc/client';
-import type { User } from 'next-auth';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { useUser } from "@/hooks/use-user";
+import { Button } from "@/components/ui/button";
+import {
+  LogOut,
+  Loader2,
+  Mail,
+  ArrowLeft,
+  Settings,
+  Calendar,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { trpc } from "@/trpc/client";
+import type { User } from "next-auth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface UserWithStats extends User {
   chatCount: number;
@@ -37,7 +49,7 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
         createdAt: new Date(data.createdAt),
         updatedAt: new Date(data.updatedAt),
         emailVerified: data.emailVerified ? new Date(data.emailVerified) : null,
-      })
+      }),
     }
   ) as { data: UserWithStats | undefined };
 
@@ -46,17 +58,16 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
       setIsSigningOut(true);
       await signOut({
         redirect: false,
-        callbackUrl: '/auth',
+        callbackUrl: "/auth",
       });
-      router.push('/auth');
+      router.push("/auth");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     } finally {
       setIsSigningOut(false);
     }
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 max-w-2xl space-y-8">
@@ -81,7 +92,6 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
     );
   }
 
-  // Handle unauthenticated state
   if (!isAuthenticated || !user) {
     return (
       <div className="container mx-auto p-6 max-w-md space-y-6 text-center">
@@ -101,7 +111,6 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
     );
   }
 
-  // Handle unauthorized access to other profiles
   if (user.id !== profileId) {
     return (
       <div className="container mx-auto p-6 max-w-md space-y-6 text-center">
@@ -112,7 +121,10 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
           </p>
         </div>
         <Button asChild className="w-full">
-          <Link href={`/profile/${user.id}`} className="flex items-center justify-center gap-2">
+          <Link
+            href={`/profile/${user.id}`}
+            className="flex items-center justify-center gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Go to My Profile
           </Link>
@@ -121,18 +133,16 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
     );
   }
 
-  // Generate user initials for avatar fallback
   const userInitials = user.name
     ? user.name
-        .split(' ')
+        .split(" ")
         .map((n) => n[0])
-        .join('')
+        .join("")
         .toUpperCase()
-    : 'U';
+    : "U";
 
   return (
     <div className="container mx-auto p-6 max-w-2xl space-y-8">
-      {/* Back button */}
       <Button
         variant="ghost"
         asChild
@@ -144,20 +154,17 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
         </Link>
       </Button>
 
-      {/* Profile card */}
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-        {/* Profile header with gradient */}
         <div className="h-32 bg-gradient-to-r from-primary/10 to-muted/20" />
-        
+
         <div className="px-6 pb-6 relative">
-          {/* Avatar */}
           <div className="relative -mt-16 mb-6">
             <div className="relative inline-block">
               <Avatar className="h-32 w-32 border-4 border-background">
                 {user.image ? (
-                  <AvatarImage 
+                  <AvatarImage
                     src={user.image}
-                    alt={user.name || 'User'}
+                    alt={user.name || "User"}
                     className="object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -167,7 +174,7 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
                   </AvatarFallback>
                 )}
               </Avatar>
-              {user.email?.includes('@gmail.com') && (
+              {user.email?.includes("@gmail.com") && (
                 <div className="absolute -bottom-2 -right-2 bg-button text-primary-foreground text-xs font-medium px-2 py-1 rounded-full">
                   Google
                 </div>
@@ -175,10 +182,9 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
             </div>
           </div>
 
-          {/* User info */}
           <div className="space-y-1 mb-8">
             <h1 className="text-2xl font-bold tracking-tight">
-              {user.name || 'User'}
+              {user.name || "User"}
             </h1>
             <div className="flex items-center text-muted-foreground">
               <Mail className="h-4 w-4 mr-2" />
@@ -188,21 +194,25 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
 
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold">{userData?.chatCount ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {userData?.chatCount ?? 0}
+              </div>
               <div className="text-sm text-muted-foreground">Chats</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold">{userData?.messageCount ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {userData?.messageCount ?? 0}
+              </div>
               <div className="text-sm text-muted-foreground">Messages</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
-                {userData?.createdAt ? (
-                  new Date(userData.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short'
-                  })
-                ) : '--'}
+                {userData?.createdAt
+                  ? new Date(userData.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                    })
+                  : "--"}
               </div>
               <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                 <Calendar className="h-3 w-3" />
@@ -212,21 +222,31 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
           </div>
 
           <div className="space-y-4">
-            <Button className="w-full" asChild>
-              <Link href="/settings" className="flex items-center justify-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span className=''>Account Settings</span>
-              </Link>
-            </Button>
+            <Tooltip >
+              <TooltipTrigger className="w-full">
+                <Button className="w-full" asChild>
+                  <Link
+                    href="#"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="">Account Settings</span>
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Not implemented yet</span>
+              </TooltipContent>
+            </Tooltip>
 
             <Button
               variant="outline"
               className={cn(
-                'w-full',
-                'text-destructive hover:bg-destructive/10 hover:text-destructive',
-                'border-destructive/20',
-                'transition-colors duration-200',
-                'flex items-center justify-center gap-2'
+                "w-full",
+                "text-destructive hover:bg-destructive/10 hover:text-destructive",
+                "border-destructive/20",
+                "transition-colors duration-200",
+                "flex items-center justify-center gap-2"
               )}
               onClick={handleSignOut}
               disabled={isSigningOut}
@@ -248,6 +268,6 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
       </div>
     </div>
   );
-}
+};
 
 export default ProfileView;

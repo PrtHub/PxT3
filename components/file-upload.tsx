@@ -13,24 +13,23 @@ import { Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useSession } from "next-auth/react";
+import { Attachment } from "@/modules/chat/types";
 
 const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_ATTACHMENTS = 2;
 
 interface FileUploadProps {
-  onUploadSuccess?: (response: any) => void;
-  onUploadError?: (error: any) => void;
+  onUploadSuccess?: (response: Attachment) => void;
+  onUploadError?: (error: unknown) => void;
   disabled?: boolean;
   currentAttachments?: number;
-  hasImageInput?: boolean;
 }
 
 const FileUploadComponent = ({
   onUploadSuccess,
   onUploadError,
   disabled,
-  hasImageInput,
   currentAttachments = 0,
 }: FileUploadProps) => {
   const session = useSession();
@@ -169,16 +168,16 @@ const FileUploadComponent = ({
           <TooltipTrigger asChild>
             <span className={cn(
             "cursor-pointer", 
-            !hasImageInput || session.status !== "authenticated" && "cursor-not-allowed"
+            session.status !== "authenticated" && "cursor-not-allowed"
           )}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || uploading || !hasImageInput || session.status !== "authenticated"}
+                disabled={disabled || uploading || session.status !== "authenticated"}
                 className={cn(
                   "h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer",
-                  !hasImageInput || session.status !== "authenticated" && "opacity-70 cursor-not-allowed"
+                  session.status !== "authenticated" && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {uploading ? (
@@ -190,7 +189,7 @@ const FileUploadComponent = ({
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{!hasImageInput ? "File upload is not supported" : "Upload file"}</p>
+            <p>Upload file</p>
           </TooltipContent>
         </Tooltip>
       ) : (

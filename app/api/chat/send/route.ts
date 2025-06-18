@@ -11,6 +11,27 @@ import { getGeminiClient } from "@/lib/gemini";
 import { getOpenRouterClient } from "@/lib/open-router";
 import { imagekit } from "@/lib/image-kit";
 
+const getErrorMessageForStatusCode = (status: number): string => {
+  switch (status) {
+    case 400:
+      return "Invalid input. Please try again.";
+    case 401:
+      return "Your API key is invalid or expired. Please update it.";
+    case 402:
+      return "You’ve run out of credits. Top up to continue.";
+    case 403:
+      return "Your input was flagged by moderation. Try rephrasing.";
+    case 408:
+      return "Request timed out. Please try again.";
+    case 429:
+      return "You’re sending too many requests. Please wait and try again.";
+    case 503:
+      return "Service unavailable. Try again in a few seconds.";
+    default:
+      return "An unexpected error occurred. Please try again.";
+  }
+};
+
 const chatContentPartTextSchema = z.object({
   type: z.literal("text"),
   text: z.string(),
@@ -197,12 +218,14 @@ export async function POST(req: NextRequest) {
             enqueue({ event: "end", data: {} });
             controller.close();
           } catch (error) {
-            console.error("[GEMINI_API_ERROR]", error);
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : "An unknown error occurred";
-            enqueue({ event: "error", data: { error: errorMessage } });
+            console.error("[GEMINI_STREAM_ERROR]", error);
+            const status = error instanceof OpenAI.APIError ? error.status || 500 : 500;
+            const message = getErrorMessageForStatusCode(status);
+
+            enqueue({
+              event: "error",
+              data: { message: message, status: status },
+            });
             controller.close();
           }
         },
@@ -228,125 +251,126 @@ export async function POST(req: NextRequest) {
           );
         };
 
-        const currentChatId = input.chatId;
+        try {
+          const currentChatId = input.chatId;
 
-        const [existingChat] = await db
-          .select({ userId: chats.userId })
-          .from(chats)
-          .where(eq(chats.id, currentChatId))
-          .limit(1);
+          const [existingChat] = await db
+            .select({ userId: chats.userId })
+            .from(chats)
+            .where(eq(chats.id, currentChatId))
+            .limit(1);
 
-        if (!existingChat) {
-          throw new Error("Chat not found.");
-        }
-        if (existingChat.userId !== userId) {
-          throw new Error("You are not authorized to access this chat.");
-        }
-
-        let userMessageId: string | null = null;
-        if (input.content && !input.isRetry) {
-          const userMessageContentType =
-            typeof input.content === "string" ? "text" : "parts";
-          const userMessageContentForDb =
-            typeof input.content === "string"
-              ? input.content
-              : JSON.stringify(input.content);
-
-          userMessageId = crypto.randomUUID();
-          await db.insert(messages).values({
-            id: userMessageId,
-            chatId: currentChatId,
-            role: "user",
-            contentType: userMessageContentType,
-            content: userMessageContentForDb,
-            parentId: input.parentMessageId,
-          });
-
-          if (input.attachments && input.attachments.length > 0) {
-            await Promise.all(
-              input.attachments.map((attachment) =>
-                db.insert(attachments).values({
-                  id: crypto.randomUUID(),
-                  messageId: userMessageId as string,
-                  userId: userId,
-                  storageKey: attachment.fileId,
-                  url: attachment.url,
-                  filename: attachment.name,
-                  mimeType: attachment.fileType || "application/octet-stream",
-                  size: attachment.size,
-                  status: "completed",
-                })
-              )
-            );
+          if (!existingChat) {
+            throw new Error("Chat not found.");
+          }
+          if (existingChat.userId !== userId) {
+            throw new Error("You are not authorized to access this chat.");
           }
 
-          enqueue({
-            event: "userMessageCreated",
-            data: { userMessageId: userMessageId },
-          });
-        } else if (input.isRetry) {
-          userMessageId = input.parentMessageId ?? ''
-        }
+          let userMessageId: string | null = null;
+          if (input.content && !input.isRetry) {
+            const userMessageContentType =
+              typeof input.content === "string" ? "text" : "parts";
+            const userMessageContentForDb =
+              typeof input.content === "string"
+                ? input.content
+                : JSON.stringify(input.content);
 
-        const chatMessages = await db
-          .select({
-            role: messages.role,
-            content: messages.content,
-            contentType: messages.contentType,
-          })
-          .from(messages)
-          .where(eq(messages.chatId, currentChatId))
-          .orderBy(messages.createdAt);
-
-        const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = chatMessages.map(msg => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.contentType === "parts" ? JSON.parse(msg.content) : msg.content,
-        }));
-
-        if (input.content) {
-          const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-            {
-              type: "text",
-              text: typeof input.content === "string" ? input.content : JSON.stringify(input.content)
-            }
-          ];
-
-          if (input.attachments && input.attachments.length > 0) {
-            input.attachments.forEach(attachment => {
-              messageContent.push({
-                type: "image_url",
-                image_url: {
-                  url: attachment.url,
-                  detail: "auto"
-                }
-              });
+            userMessageId = crypto.randomUUID();
+            await db.insert(messages).values({
+              id: userMessageId,
+              chatId: currentChatId,
+              role: "user",
+              contentType: userMessageContentType,
+              content: userMessageContentForDb,
+              parentId: input.parentMessageId,
             });
+
+            if (input.attachments && input.attachments.length > 0) {
+              await Promise.all(
+                input.attachments.map((attachment) =>
+                  db.insert(attachments).values({
+                    id: crypto.randomUUID(),
+                    messageId: userMessageId as string,
+                    userId: userId,
+                    storageKey: attachment.fileId,
+                    url: attachment.url,
+                    filename: attachment.name,
+                    mimeType: attachment.fileType || "application/octet-stream",
+                    size: attachment.size,
+                    status: "completed",
+                  })
+                )
+              );
+            }
+
+            enqueue({
+              event: "userMessageCreated",
+              data: { userMessageId: userMessageId },
+            });
+          } else if (input.isRetry) {
+            userMessageId = input.parentMessageId ?? ''
           }
 
-          const userMessageForLlm = {
-            role: "user" as const,
-            content: messageContent
-          };
-          formattedMessagesForLlm.push(userMessageForLlm);
-        }
+          const chatMessages = await db
+            .select({
+              role: messages.role,
+              content: messages.content,
+              contentType: messages.contentType,
+            })
+            .from(messages)
+            .where(eq(messages.chatId, currentChatId))
+            .orderBy(messages.createdAt);
 
-        let aiResponseContent = "";
-        const aiMessageId = crypto.randomUUID();
+          const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = chatMessages.map(msg => ({
+            role: msg.role as "user" | "assistant",
+            content: msg.contentType === "parts" ? JSON.parse(msg.content) : msg.content,
+          }));
 
-        console.log(`[API] Calling OpenRouter with model: ${input.model}...`);
-        console.log(`[API] Using API key: ${input.apiKey}`);
+          if (input.content) {
+            const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+              {
+                type: "text",
+                text: typeof input.content === "string" ? input.content : JSON.stringify(input.content)
+              }
+            ];
 
-        const openrouterResponse = await openrouter.chat.completions.create({
-          model: input.model,
-          messages: formattedMessagesForLlm,
-          stream: true,
-          tools: input.webSearch?.enabled
-            ? [
-                {
-                  type: "function",
-                  function: {
-                    name: "web_search",
-                    description: `Search the web for up-to-date information across both programming and general topics as well as news. This is particularly useful for:
+            if (input.attachments && input.attachments.length > 0) {
+              input.attachments.forEach(attachment => {
+                messageContent.push({
+                  type: "image_url",
+                  image_url: {
+                    url: attachment.url,
+                    detail: "auto"
+                  }
+                });
+              });
+            }
+
+            const userMessageForLlm = {
+              role: "user" as const,
+              content: messageContent
+            };
+            formattedMessagesForLlm.push(userMessageForLlm);
+          }
+
+          let aiResponseContent = "";
+          const aiMessageId = crypto.randomUUID();
+
+          console.log(`[API] Calling OpenRouter with model: ${input.model}...`);
+          console.log(`[API] Using API key: ${input.apiKey}`);
+
+          const openrouterResponse = await openrouter.chat.completions.create({
+            model: input.model,
+            messages: formattedMessagesForLlm,
+            stream: true,
+            tools: input.webSearch?.enabled
+              ? [
+                  {
+                    type: "function",
+                    function: {
+                      name: "web_search",
+                      description: `Search the web for up-to-date information across both programming and general topics as well as news. This is particularly useful for:
 Programming & Development:
 - Finding the latest documentation, APIs, and SDK versions
 - Researching framework updates, breaking changes, or security patches
@@ -362,82 +386,93 @@ General Knowledge:
 - Looking up facts and verifying information
 - Getting weather forecasts and time-sensitive data
 - Exploring topics in science, technology, and other fields`,
-                    parameters: {
-                      type: "object",
-                      properties: {
-                        query: {
-                          type: "string",
-                          description: "The search query",
+                      parameters: {
+                        type: "object",
+                        properties: {
+                          query: {
+                            type: "string",
+                            description: "The search query",
+                          },
                         },
+                        required: ["query"],
                       },
-                      required: ["query"],
                     },
                   },
-                },
-              ]
-            : undefined,
-          tool_choice: input.webSearch?.enabled ? "auto" : undefined,
-        });
+                ]
+              : undefined,
+            tool_choice: input.webSearch?.enabled ? "auto" : undefined,
+          });
 
-        let chunkCount = 0;
-        let toolCallBuffer = "";
+          let chunkCount = 0;
+          let toolCallBuffer = "";
 
-        for await (const chunk of openrouterResponse) {
-          chunkCount++;
+          for await (const chunk of openrouterResponse) {
+            chunkCount++;
 
-          if (chunk.choices[0]?.delta?.tool_calls) {
-            const toolCall = chunk.choices[0].delta.tool_calls[0];
-            if (toolCall.function) {
-              if (toolCall.function.name) {
-                toolCallBuffer = "";
-              }
-              if (toolCall.function.arguments) {
-                toolCallBuffer += toolCall.function.arguments;
-                try {
-                  const args = JSON.parse(toolCallBuffer);
-                  if (args.query) {
-                    formattedMessagesForLlm.push({
-                      role: "assistant",
-                      content: `Searching the web for: ${args.query}`,
-                    });
-                    toolCallBuffer = "";
+            if (chunk.choices[0]?.delta?.tool_calls) {
+              const toolCall = chunk.choices[0].delta.tool_calls[0];
+              if (toolCall.function) {
+                if (toolCall.function.name) {
+                  toolCallBuffer = "";
+                }
+                if (toolCall.function.arguments) {
+                  toolCallBuffer += toolCall.function.arguments;
+                  try {
+                    const args = JSON.parse(toolCallBuffer);
+                    if (args.query) {
+                      formattedMessagesForLlm.push({
+                        role: "assistant",
+                        content: `Searching the web for: ${args.query}`,
+                      });
+                      toolCallBuffer = "";
+                    }
+                  } catch {
+                    console.error("Error parsing tool call arguments");
                   }
-                } catch {
-                  console.error("Error parsing tool call arguments");
                 }
               }
             }
+
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              aiResponseContent += content;
+              enqueue({ event: "chunk", data: { content } });
+            }
           }
 
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            aiResponseContent += content;
-            enqueue({ event: "chunk", data: { content } });
+          if (chunkCount === 0 || !aiResponseContent) {
+            throw new Error(
+              "No content received from AI model despite a successful stream."
+            );
           }
+
+          const parentIdForAssistant = userMessageId || input.parentMessageId;
+
+          await db.insert(messages).values({
+            id: aiMessageId,
+            chatId: currentChatId,
+            role: "assistant",
+            contentType: "text",
+            content: aiResponseContent,
+            parentId: parentIdForAssistant,
+          });
+
+          enqueue({
+            event: "end",
+            data: { userMessageId: userMessageId, aiMessageId: aiMessageId },
+          });
+          controller.close();
+        } catch (error) {
+            console.error("[OPENROUTER_STREAM_ERROR]", error);
+            const status = error instanceof OpenAI.APIError ? error.status || 500 : 500;
+            const message = getErrorMessageForStatusCode(status);
+
+            enqueue({
+              event: "error",
+              data: { message: message, status: status },
+            });
+            controller.close();
         }
-
-        if (chunkCount === 0 || !aiResponseContent) {
-          throw new Error(
-            "No content received from AI model despite a successful stream."
-          );
-        }
-
-        const parentIdForAssistant = userMessageId || input.parentMessageId;
-
-        await db.insert(messages).values({
-          id: aiMessageId,
-          chatId: currentChatId,
-          role: "assistant",
-          contentType: "text",
-          content: aiResponseContent,
-          parentId: parentIdForAssistant,
-        });
-
-        enqueue({
-          event: "end",
-          data: { userMessageId: userMessageId, aiMessageId: aiMessageId },
-        });
-        controller.close();
       },
       cancel() {
         console.log("Stream canceled by client.");
@@ -452,12 +487,36 @@ General Knowledge:
       },
     });
   } catch (error) {
-    console.error("[CHAT_POST_API]", error);
+    console.error("[CHAT_POST_API] Error:", error);
+
     if (error instanceof z.ZodError) {
-      return new NextResponse(JSON.stringify(error.errors), { status: 400 });
+      const message = getErrorMessageForStatusCode(400);
+      return new NextResponse(
+        JSON.stringify({
+          error: message,
+          details: error.flatten().fieldErrors,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal Server Error";
-    return new NextResponse(errorMessage, { status: 500 });
+
+    if (error instanceof OpenAI.APIError) {
+      const status = error.status || 500;
+      const message = getErrorMessageForStatusCode(status);
+      return new NextResponse(JSON.stringify({ error: message }), {
+        status: status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const errorMessage = getErrorMessageForStatusCode(500);
+
+    return new NextResponse(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

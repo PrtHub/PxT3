@@ -8,17 +8,11 @@ import { useInitialMessageStore } from "../store/initial-message-store";
 import { trpc } from "@/trpc/client";
 import ChatHeader from "./chat-header";
 import { useAttachmentsStore } from "../store/attachments-store";
-import { toast } from "sonner";
 import { useRetryMessageStore } from "../store/retry-message-store";
+import { Attachment } from "../types";
 
 interface ChatPageProps {
   chatId: string;
-}
-
-interface Attachment {
-  id: string;
-  url: string;
-  name: string;
 }
 
 interface Message {
@@ -35,8 +29,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
   const setInitialMessage = useInitialMessageStore((state) => state.setMessage);
   const initialMessageSent = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [streamingResponse, setStreamingResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [streamingResponse, setStreamingResponse] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
   const assistantContentRef = useRef<string>("");
   const latestUserMessageIdRef = useRef<string | null>(null);
@@ -85,7 +80,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     },
     onError: (error) => {
       console.error("Failed to delete message:", error);
-      toast.error("Failed to delete AI message");
     },
   });
 
@@ -106,7 +100,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               : JSON.stringify(msg.content),
           attachments:
             msg.attachments?.map((att: Attachment) => ({
-              id: att.id,
+              id: att.fileId,
               url: att.url,
               name: att.name,
             })) || [],
@@ -162,7 +156,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       parentId?: string,
       isRetry?: boolean
     ) => {
-      setLoading(true);
+      setError(null);
       if (!isRetry) {
         const userMessageId = crypto.randomUUID();
         setMessages((prev) => [
@@ -182,6 +176,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       setStreamingResponse("");
       assistantContentRef.current = "";
       isStoppedRef.current = false;
+      setLoading(true);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -205,11 +200,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         });
 
         if (!res.ok || !res.body) {
-          const errorText = await res.text();
-          toast.error("Error in Network response");
-          throw new Error(
-            `Network response was not ok: ${res.status} ${errorText}`
-          );
+          const errorData = await res.json();
+          setError(errorData.error || "An unexpected error occurred.");
+          setLoading(false);
+          return;
         }
 
         const reader = res.body.getReader();
@@ -238,7 +232,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             utils.chat.getChatsForUser.invalidate();
             abortControllerRef.current = null;
             console.log("[ChatPage] Streaming done naturally.");
-            toast.success("Streaming done naturally.");
             return;
           }
 
@@ -284,7 +277,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
               }
             } catch (err) {
               console.error("Failed to parse stream event:", eventString, err);
-              toast.error("Failed to parse stream event");
+              setError(err as string || "Failed to parse stream event");
             }
           }
 
@@ -302,7 +295,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
             );
           } else {
             console.error("Fetch error:", err);
-            toast.error("Failed to fetch message");
+            setError("Failed to fetch message");
           }
         }
         setLoading(false);
@@ -320,6 +313,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
       webSearchConfig,
       clearAttachments,
       initialAttachments,
+      utils.chat.getChatsForUser,
     ]
   );
 
@@ -337,6 +331,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         await handleSendMessage(newContent, selectedModel || "");
       } catch (error) {
         console.error("Update flow failed:", error);
+        setError("Failed to update message");
       }
     },
     [deleteMessage, selectedModel, handleSendMessage]
@@ -365,7 +360,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
           );
         } catch (error) {
           console.error("Retry message failed:", error);
-          toast.error("Retry failed");
+          setError(error as string || "Failed to retry message");
         }
       };
 
@@ -386,8 +381,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
     if (initialChatId) {
       fetchMessages(initialChatId);
     }
-   utils.chat.getChatsForUser.invalidate()
-  }, [initialChatId]);
+    utils.chat.getChatsForUser.invalidate();
+  }, [initialChatId, utils.chat.getChatsForUser]);
 
   useEffect(() => {
     if (initialMessage && initialChatId && !initialMessageSent.current) {
@@ -410,6 +405,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ chatId: initialChatId }) => {
         messages={messages}
         streamingResponse={streamingResponse}
         loading={loading}
+        error={error}
         onUpdateMessage={handleUpdateMessage}
       />
       <ChatInputBox

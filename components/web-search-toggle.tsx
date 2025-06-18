@@ -10,14 +10,12 @@ interface WebSearchToggleProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   className?: string;
-  hasWebSearch?: boolean;
 }
 
 export function WebSearchToggle({ 
   enabled, 
   onToggle, 
-  className, 
-  hasWebSearch = false 
+  className,  
 }: WebSearchToggleProps) {
   const [open, setOpen] = useState(false);
 
@@ -32,17 +30,15 @@ export function WebSearchToggle({
         <TooltipTrigger asChild>
           <div className={cn(
             "cursor-pointer", 
-            !hasWebSearch && "cursor-not-allowed",
+
             className
           )}>
             <Toggle
               id="web-search"
               pressed={enabled}
               onPressedChange={handleToggle}
-              disabled={!hasWebSearch}
               className={cn(
-                "data-[state=on]:bg-button/80 data-[state=on]:text-black hover:bg-transparent hover:text-button/80 h-7",
-                !hasWebSearch && "opacity-30"
+                "data-[state=on]:bg-button/80 data-[state=on]:text-black hover:bg-transparent hover:text-button/80 h-7 opacity-50"
               )}
               asChild
             >
@@ -53,11 +49,7 @@ export function WebSearchToggle({
           </div>
         </TooltipTrigger>
         <TooltipContent side="top">
-          {hasWebSearch ? (
-            <p>{enabled ? "Disable" : "Enable"} web search</p>
-          ) : (
-            <p>Web search not supported</p>
-          )}
+          <p>{enabled ? "Disable" : "Enable"} web search</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

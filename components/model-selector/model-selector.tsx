@@ -262,7 +262,7 @@ export function ModelSelector({
             <div className="flex items-center gap-2">
               {getModelIcon(selectedModel)}
               <div className="flex items-center justify-between w-full">
-                <span className="truncate">{selectedModelName}</span>
+                <span className="truncate opacity-70">{selectedModelName}</span>
               </div>
               <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
             </div>

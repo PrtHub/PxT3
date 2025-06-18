@@ -43,6 +43,19 @@ interface ActionButtonsProps {
   messageId: string;
 }
 
+const getProviderFromModelId = (modelId: string): string => {
+  if (modelId.includes("gemini") && modelId.includes("image")) {
+    return "google";
+  }
+
+  if (modelId.includes("/")) {
+    return modelId.split("/")[0];
+  }
+
+  const provider = modelId.split("-")[0];
+  return provider.toLowerCase();
+};
+
 const ActionButtons = ({
   isUser,
   isEditing,
@@ -65,21 +78,14 @@ const ActionButtons = ({
     { enabled: !!aiMessage?.parentId }
   );
   
-  console.log("parentMessage", parentMessage);
-
-  const chatModels = availableModels.filter(model => 
-    !model.id.toLowerCase().includes('image') &&
-    !model.name.toLowerCase().includes('image')
-  );
-
-  const modelGroups = chatModels.reduce((acc, model) => {
-    const provider = model.id.split('/')[0].toLowerCase();
+  const modelGroups = availableModels.reduce((acc, model) => {
+    const provider = getProviderFromModelId(model.id);
     if (!acc[provider]) {
       acc[provider] = [];
     }
     acc[provider].push(model);
     return acc;
-  }, {} as Record<string, typeof chatModels>);
+  }, {} as Record<string, typeof availableModels>);
 
   const handleRetryWithModel = (modelId: string) => {
     if (!aiMessage?.id || !aiMessage?.parentId || !parentMessage?.content) return;

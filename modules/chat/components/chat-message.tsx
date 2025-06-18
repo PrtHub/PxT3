@@ -2,11 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Bot,
-  Check,
-  X,
-} from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,12 +16,7 @@ import {
 } from "@/lib/speech-synthesis";
 import MarkdownContent from "@/components/markdown-content";
 import ActionButtons from "@/components/action-buttons";
-
-interface Attachment {
-  id: string;
-  url: string;
-  name: string;
-}
+import { Attachment } from "../types";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -180,8 +171,8 @@ export function ChatMessage({
             {isEditing ? (
               <div className="flex flex-col gap-2 w-full px-2">
                 <Textarea
-                   value={editedContent} 
-                   onChange={(e) => setEditedContent(e.target.value)}
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
                   className="w-full min-h-[100px] p-2 text-white/90 focus:outline-none border-none outline-none ring-0 focus:ring-0 focus:ring-offset-0 focus:border-none focus:ring-transparent focus:ring-offset-transparent rounded-md"
                   autoFocus
                 />
@@ -225,8 +216,8 @@ export function ChatMessage({
                           }
                         >
                           <Image
-                            src={attachment.url}
-                            alt={attachment.name}
+                            src={attachment.url || ""}
+                            alt={attachment.name || ""}
                             width={200}
                             height={200}
                             className="object-cover rounded-md"
@@ -327,25 +318,6 @@ export function ChatMessage({
         isReading={isReading}
         messageId={messageId}
       />
-    </div>
-  );
-}
-
-export function ChatMessageLoading() {
-  return (
-    <div className="w-full bg-gradient-to-b from-zinc-900/80 to-transparent py-4 mt-20 rounded-md">
-      <div className="flex gap-4 px-4 m-auto max-w-3xl">
-        <div className="flex-shrink-0">
-          <div className="h-9 w-9 rounded-lg bg-emerald-900/40 flex items-center justify-center">
-            <Bot className="h-4.5 w-4.5 text-emerald-400" />
-          </div>
-        </div>
-        <div className="flex-1 space-y-3 pt-1">
-          <div className="h-4 bg-zinc-800/60 rounded-full w-3/4 animate-pulse" />
-          <div className="h-4 bg-zinc-800/40 rounded-full w-5/6 animate-pulse" />
-          <div className="h-4 bg-zinc-800/30 rounded-full w-2/3 animate-pulse" />
-        </div>
-      </div>
     </div>
   );
 }
