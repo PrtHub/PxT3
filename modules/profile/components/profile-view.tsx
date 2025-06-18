@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useUser } from "@/hooks/use-user";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 interface UserWithStats extends User {
   chatCount: number;
@@ -60,7 +60,7 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
         redirect: false,
         callbackUrl: "/auth",
       });
-      router.push("/auth");
+      router.replace("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
@@ -94,14 +94,14 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="container mx-auto p-6 max-w-md space-y-6 text-center">
+      <div className="container mx-auto h-screen max-w-md space-y-6 text-center flex items-center justify-center flex-col">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Access Denied</h1>
           <p className="text-muted-foreground">
             You need to be signed in to view this page
           </p>
         </div>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full bg-gradient-to-r from-button to-button/90 text-black py-6 text-base font-medium rounded-lg shadow-lg transition-all duration-200 transform hover:scale-[1.01] cursor-pointer  gap-2">
           <Link href="/auth" className="flex items-center justify-center gap-2">
             <LogOut className="h-4 w-4" />
             Sign In
@@ -242,7 +242,7 @@ const ProfileView = ({ profileId }: ProfileViewProps) => {
             <Button
               variant="outline"
               className={cn(
-                "w-full",
+                "w-full cursor-pointer",
                 "text-destructive hover:bg-destructive/10 hover:text-destructive",
                 "border-destructive/20",
                 "transition-colors duration-200",

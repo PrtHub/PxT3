@@ -1,34 +1,6 @@
 export const freeModels = {
   "data": [
     {
-      "id": "google/gemini-2.0-flash-exp:free",
-      "name": "Gemini 2.0 Flash",
-      "created": 1741818122,
-      "description": "Google's Gemini 2.0 Flash model",
-      "architecture": {
-        "input_modalities": ["text", "image"],
-        "output_modalities": ["text"],
-        "tokenizer": "gemini"
-      },
-      "top_provider": {
-        "is_moderated": true
-      },
-      "pricing": {
-        "prompt": "0.0000007",
-        "completion": "0.0000007",
-        "image": "0",
-        "request": "0",
-        "input_cache_read": "0",
-        "input_cache_write": "0",
-        "web_search": "0",
-        "internal_reasoning": "0"
-      },
-      "context_length": 128000,
-      "hugging_face_id": "google/gemini-2.0-flash-exp",
-      "per_request_limits": {},
-      "supported_parameters": ["temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty"]
-    },
-    {
       "id": "deepseek/deepseek-r1-0528:free",
       "name": "DeepSeek R1",
       "created": 1741818122,
@@ -83,6 +55,34 @@ export const freeModels = {
       "hugging_face_id": "deepseek-ai/deepseek-r1-0528-qwen3-8b",
       "per_request_limits": {},
       "supported_parameters": ["temperature", "max_tokens", "top_p"]
+    },
+    {
+      "id": "google/gemini-2.0-flash-exp:free",
+      "name": "Gemini 2.0 Flash",
+      "created": 1741818122,
+      "description": "Google's Gemini 2.0 Flash model",
+      "architecture": {
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "gemini"
+      },
+      "top_provider": {
+        "is_moderated": true
+      },
+      "pricing": {
+        "prompt": "0.0000007",
+        "completion": "0.0000007",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "context_length": 128000,
+      "hugging_face_id": "google/gemini-2.0-flash-exp",
+      "per_request_limits": {},
+      "supported_parameters": ["temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty"]
     },
     {
       "id": "qwen/qwen3-8b:free",
@@ -222,7 +222,7 @@ export const freeModels = {
       "context_length": 96000,
       "hugging_face_id": "mistralai/Mistral-3.1-24B-Instruct-v0.2",
       "per_request_limits": {},
-      "supported_parameters": ["temperature", "max_tokens", "top_p", "tools", "tool_choice"]
+      "supported_parameters": ["temperature", "max_tokens", "top_p"]
     },
     {
       "id": "meta-llama/llama-4-scout:free",
@@ -279,6 +279,90 @@ export const freeModels = {
       "hugging_face_id": "google/gemma-3-4b-it",
       "per_request_limits": {},
       "supported_parameters": ["temperature", "max_tokens", "top_p"]
+    },
+    {
+      id: "moonshotai/kimi-dev-72b:free",
+      name: "Kimi Dev 72B",
+      created: 1741818122,
+      description: "MoonshotAI's Kimi Dev 72B model for developers",
+      architecture: {
+        input_modalities: ["text"],
+        output_modalities: ["text"],
+        tokenizer: "Moonshot"
+      },
+      top_provider: {
+        is_moderated: true
+      },
+      pricing: {
+        prompt: "0.0000007",
+        completion: "0.0000007",
+        image: "0",
+        request: "0",
+        input_cache_read: "0",
+        input_cache_write: "0",
+        web_search: "0",
+        internal_reasoning: "0"
+      },
+      context_length: 131072,
+      hugging_face_id: "moonshot-ai/kimi-dev-72b",
+      per_request_limits: {},
+      supported_parameters: ["temperature", "max_tokens", "top_p"]
+    },
+    {
+      id: "cognitivecomputations/dolphin3.0-mistral-24b:free",
+      name: "Dolphin 3.0 Mistral",
+      created: 1741818122,
+      description: "Dolphin 3.0 Mistral 24B Instruct tuned model",
+      architecture: {
+        input_modalities: ["text"],
+        output_modalities: ["text"],
+        tokenizer: "Mistral"
+      },
+      top_provider: {
+        is_moderated: true
+      },
+      pricing: {
+        prompt: "0.0000007",
+        completion: "0.0000007",
+        image: "0",
+        request: "0",
+        input_cache_read: "0",
+        input_cache_write: "0",
+        web_search: "0",
+        internal_reasoning: "0"
+      },
+      context_length: 32768,
+      hugging_face_id: "cognitivecomputations/dolphin-2.6-mistral-7b",
+      per_request_limits: {},
+      supported_parameters: ["temperature", "max_tokens", "top_p"]
+    },
+    {
+      id: "nousresearch/deephermes-3-mistral-24b-preview:free",
+      name: "DeepHermes 3 Preview",
+      created: 1741818122,
+      description: "DeepHermes 3 Mistral 24B Preview from NousResearch",
+      architecture: {
+        input_modalities: ["text"],
+        output_modalities: ["text"],
+        tokenizer: "Mistral"
+      },
+      top_provider: {
+        is_moderated: true
+      },
+      pricing: {
+        prompt: "0.0000007",
+        completion: "0.0000007",
+        image: "0",
+        request: "0",
+        input_cache_read: "0",
+        input_cache_write: "0",
+        web_search: "0",
+        internal_reasoning: "0"
+      },
+      context_length: 128000,
+      hugging_face_id: "nousresearch/deephermes-3-mistral-24b-preview",
+      per_request_limits: {},
+      supported_parameters: ["temperature", "max_tokens", "top_p"]
     }
   ]
 }

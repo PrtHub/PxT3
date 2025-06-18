@@ -79,18 +79,7 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     }
   }, [selectedModel, chatId, availableModels, setSelectedModel]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (inputValue.trim() && !loading) {
-        if (onSend) {
-          onSend(inputValue, selectedModel, attachments);
-        }
-        setInputValue("");
-      }
-    }
-  };
-
+ 
   const handleUploadSuccess = (response: Attachment) => {
     addAttachment(chatId, {
       fileId: response.fileId,
@@ -119,6 +108,14 @@ const ChatInputBox: React.FC<ChatInputBoxProps> = ({
     onSend?.(inputValue.trim(), selectedModel, attachments);
     setInputValue("");
   };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+     handleSubmit(e)
+    }
+  };
+
 
   const hasWebSearch =
     availableModels?.some(

@@ -141,8 +141,12 @@ export async function POST(req: NextRequest) {
                 id: userMessageId,
                 chatId: currentChatId,
                 role: "user",
-                content: typeof input.content === "string" ? input.content : JSON.stringify(input.content),
-                contentType: typeof input.content === "string" ? "text" : "image",
+                content:
+                  typeof input.content === "string"
+                    ? input.content
+                    : JSON.stringify(input.content),
+                contentType:
+                  typeof input.content === "string" ? "text" : "image",
                 parentId: input.parentMessageId ?? null,
               });
 
@@ -219,7 +223,8 @@ export async function POST(req: NextRequest) {
             controller.close();
           } catch (error) {
             console.error("[GEMINI_STREAM_ERROR]", error);
-            const status = error instanceof OpenAI.APIError ? error.status || 500 : 500;
+            const status =
+              error instanceof OpenAI.APIError ? error.status || 500 : 500;
             const message = getErrorMessageForStatusCode(status);
 
             enqueue({
@@ -309,7 +314,7 @@ export async function POST(req: NextRequest) {
               data: { userMessageId: userMessageId },
             });
           } else if (input.isRetry) {
-            userMessageId = input.parentMessageId ?? ''
+            userMessageId = input.parentMessageId ?? "";
           }
 
           const chatMessages = await db
@@ -322,34 +327,42 @@ export async function POST(req: NextRequest) {
             .where(eq(messages.chatId, currentChatId))
             .orderBy(messages.createdAt);
 
-          const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = chatMessages.map(msg => ({
-            role: msg.role as "user" | "assistant",
-            content: msg.contentType === "parts" ? JSON.parse(msg.content) : msg.content,
-          }));
+          const formattedMessagesForLlm: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+            chatMessages.map((msg) => ({
+              role: msg.role as "user" | "assistant",
+              content:
+                msg.contentType === "parts"
+                  ? JSON.parse(msg.content)
+                  : msg.content,
+            }));
 
           if (input.content) {
-            const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-              {
-                type: "text",
-                text: typeof input.content === "string" ? input.content : JSON.stringify(input.content)
-              }
-            ];
+            const messageContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] =
+              [
+                {
+                  type: "text",
+                  text:
+                    typeof input.content === "string"
+                      ? input.content
+                      : JSON.stringify(input.content),
+                },
+              ];
 
             if (input.attachments && input.attachments.length > 0) {
-              input.attachments.forEach(attachment => {
+              input.attachments.forEach((attachment) => {
                 messageContent.push({
                   type: "image_url",
                   image_url: {
                     url: attachment.url,
-                    detail: "auto"
-                  }
+                    detail: "auto",
+                  },
                 });
               });
             }
 
             const userMessageForLlm = {
               role: "user" as const,
-              content: messageContent
+              content: messageContent,
             };
             formattedMessagesForLlm.push(userMessageForLlm);
           }
@@ -441,9 +454,9 @@ General Knowledge:
           }
 
           if (chunkCount === 0 || !aiResponseContent) {
-            throw new Error(
-              "No content received from AI model despite a successful stream."
-            );
+            const errorMessage =
+              "No response received from the AI model. This might be due to insufficient API credits, rate limits, or the model being unavailable. Please try a different API key, switch to a free model, or try again later.";
+            throw new Error(errorMessage);
           }
 
           const parentIdForAssistant = userMessageId || input.parentMessageId;
@@ -463,15 +476,16 @@ General Knowledge:
           });
           controller.close();
         } catch (error) {
-            console.error("[OPENROUTER_STREAM_ERROR]", error);
-            const status = error instanceof OpenAI.APIError ? error.status || 500 : 500;
-            const message = getErrorMessageForStatusCode(status);
+          console.error("[OPENROUTER_STREAM_ERROR]", error);
+          const status =
+            error instanceof OpenAI.APIError ? error.status || 500 : 500;
+          const message = getErrorMessageForStatusCode(status);
 
-            enqueue({
-              event: "error",
-              data: { message: message, status: status },
-            });
-            controller.close();
+          enqueue({
+            event: "error",
+            data: { message: message, status: status },
+          });
+          controller.close();
         }
       },
       cancel() {
