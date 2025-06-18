@@ -50,7 +50,6 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
   const deleteChat = trpc.chat.deleteChat.useMutation({
     onSuccess: () => {
       utils.chat.getChatsForUser.invalidate();
-     
     },
     onError: () => {
       console.log("Failed to delete chat!");
@@ -160,6 +159,7 @@ const ChatHistory = ({ searchQuery }: ChatHistoryProps) => {
                   >
                     <button
                       type="button"
+                      disabled={!!deleteChat.isPending}
                       onClick={(e) => handleDeleteClick(e, chat.id)}
                       className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-300  hover:text-button hover:bg-zinc-700/80 cursor-pointer transition-colors duration-200 pointer-events-auto"
                       aria-label="Delete chat"

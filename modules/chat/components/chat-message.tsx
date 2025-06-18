@@ -17,6 +17,7 @@ import {
 import MarkdownContent from "@/components/markdown-content";
 import ActionButtons from "@/components/action-buttons";
 import { Attachment } from "../types";
+import { toast } from "sonner";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -41,6 +42,7 @@ export function ChatMessage({
   const isShared = pathname.includes("/share/");
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
+  const [isBranching, setIsBranching] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isBranched, setIsBranched] = useState(false);
   const [isReading, setIsReading] = useState(false);
@@ -56,6 +58,7 @@ export function ChatMessage({
 
   const handleBranch = async () => {
     try {
+      setIsBranching(true);
       const chatId = pathname.split("/").pop();
       const response = await fetch("/api/chat/branch", {
         method: "POST",
@@ -75,11 +78,15 @@ export function ChatMessage({
       const data = await response.json();
       setIsBranched(true);
       console.log("New branch created successfully");
+      toast.success("New branch created!");
 
       router.push(`/chat/${data.newChatId}`);
     } catch (error) {
       console.error("Failed to create branch:", error);
       console.log("Failed to create branch");
+      toast.error("Failed to create branch");
+    } finally {
+      setIsBranching(false);
     }
   };
 
@@ -319,6 +326,7 @@ export function ChatMessage({
         isReading={isReading}
         messageId={messageId}
         isShared={isShared}
+        isBranching={isBranching}
       />
     </div>
   );

@@ -42,6 +42,7 @@ interface ActionButtonsProps {
   isReading: boolean;
   messageId: string;
   isShared: boolean;
+  isBranching: boolean;
 }
 
 const getProviderFromModelId = (modelId: string): string => {
@@ -69,6 +70,7 @@ const ActionButtons = ({
   isReading,
   messageId,
   isShared,
+  isBranching,
 }: ActionButtonsProps) => {
   const { availableModels } = useSettingsStore();
   const { setRetryData } = useRetryMessageStore();
@@ -136,6 +138,7 @@ const ActionButtons = ({
                   <Button
                     variant="ghost"
                     size="sm"
+                    disabled={isBranching}
                     onClick={handleBranch}
                     className="h-7 px-1 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50 cursor-pointer"
                   >
