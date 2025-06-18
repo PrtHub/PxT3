@@ -59,7 +59,7 @@ pxt.chat is a cutting-edge AI chat application built with the latest web technol
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/PrtHub/pxt.chat
+   git clone https://github.com/PrtHub/pxt.chat.git
    cd pxt.chat
    ```
 
